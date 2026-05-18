@@ -1,0 +1,161 @@
+### Family totals ###
+  review_working_line: 167314
+  graded_step_working_line: 51186
+  feedback: 27043
+  annotation_other: 24184
+  authored_question: 22843
+  graded_step_desc: 21912
+  graded_step_explanation: 21726
+  other:error_location: 21648
+  graded_step_student_work: 20470
+  question_short_prompt: 13806
+  student_answer: 13763
+  annotation_error_text: 12095
+  other:intervention_bucket: 9081
+  rubric_description: 8927
+  rubric_criterion: 8924
+  ai_answer: 5597
+  ai_solution: 5590
+  other:error_description: 5347
+  other:error_signals[0]: 3417
+  other:error_signals[1]: 1643
+  other:error_signals[2]: 445
+  expected_answer: 410
+  other:prerequisite_note: 398
+  other:source: 100
+  other:error_signals[3]: 17
+
+### Failures by source family ###
+
+* likely_math_missing_delimiters (n=54041)
+    review_working_line: 11317  (20.9%)
+    graded_step_working_line: 7822  (14.5%)
+    other:error_location: 6006  (11.1%)
+    annotation_other: 5562  (10.3%)
+    annotation_error_text: 3442  (6.4%)
+    graded_step_student_work: 3394  (6.3%)
+    other:error_signals[0]: 3284  (6.1%)
+    rubric_criterion: 2579  (4.8%)
+    graded_step_desc: 2528  (4.7%)
+    graded_step_explanation: 1718  (3.2%)
+    other:error_signals[1]: 1450  (2.7%)
+    authored_question: 945  (1.7%)
+    other:error_description: 751  (1.4%)
+    ai_answer: 734  (1.4%)
+    student_answer: 640  (1.2%)
+    rubric_description: 616  (1.1%)
+    feedback: 415  (0.8%)
+    other:error_signals[2]: 373  (0.7%)
+    ai_solution: 266  (0.5%)
+    other:source: 100  (0.2%)
+    question_short_prompt: 62  (0.1%)
+    expected_answer: 20  (0.0%)
+    other:error_signals[3]: 17  (0.0%)
+
+* missing_math_delimiters (n=38387)
+    review_working_line: 12637  (32.9%)
+    graded_step_working_line: 9533  (24.8%)
+    annotation_error_text: 4712  (12.3%)
+    graded_step_student_work: 3639  (9.5%)
+    annotation_other: 3222  (8.4%)
+    rubric_criterion: 2511  (6.5%)
+    student_answer: 1131  (2.9%)
+    ai_answer: 794  (2.1%)
+    graded_step_desc: 68  (0.2%)
+    authored_question: 44  (0.1%)
+    graded_step_explanation: 29  (0.1%)
+    other:error_description: 28  (0.1%)
+    rubric_description: 23  (0.1%)
+    expected_answer: 6  (0.0%)
+    ai_solution: 6  (0.0%)
+    feedback: 4  (0.0%)
+
+* tricky_false_positive (n=16524)
+    review_working_line: 11020  (66.7%)
+    graded_step_working_line: 2090  (12.6%)
+    authored_question: 916  (5.5%)
+    question_short_prompt: 549  (3.3%)
+    graded_step_explanation: 441  (2.7%)
+    feedback: 330  (2.0%)
+    graded_step_student_work: 289  (1.7%)
+    graded_step_desc: 279  (1.7%)
+    rubric_description: 211  (1.3%)
+    student_answer: 202  (1.2%)
+    rubric_criterion: 69  (0.4%)
+    annotation_error_text: 44  (0.3%)
+    other:error_description: 34  (0.2%)
+    ai_answer: 16  (0.1%)
+    ai_solution: 15  (0.1%)
+    annotation_other: 12  (0.1%)
+    expected_answer: 7  (0.0%)
+
+* bad_brace_balance (n=804)
+    review_working_line: 190  (23.6%)
+    graded_step_working_line: 136  (16.9%)
+    feedback: 115  (14.3%)
+    graded_step_student_work: 84  (10.4%)
+    annotation_error_text: 78  (9.7%)
+    student_answer: 52  (6.5%)
+    ai_solution: 46  (5.7%)
+    graded_step_desc: 27  (3.4%)
+    annotation_other: 22  (2.7%)
+    rubric_criterion: 14  (1.7%)
+    other:error_description: 12  (1.5%)
+    graded_step_explanation: 12  (1.5%)
+    rubric_description: 8  (1.0%)
+    authored_question: 4  (0.5%)
+    ai_answer: 4  (0.5%)
+
+* unbalanced_dollar (n=192)
+    authored_question: 94  (49.0%)
+    graded_step_working_line: 43  (22.4%)
+    question_short_prompt: 17  (8.9%)
+    review_working_line: 12  (6.2%)
+    student_answer: 10  (5.2%)
+    graded_step_student_work: 9  (4.7%)
+    ai_solution: 5  (2.6%)
+    rubric_criterion: 2  (1.0%)
+
+* katex_parse_error (n=151)
+    authored_question: 101  (66.9%)
+    question_short_prompt: 30  (19.9%)
+    review_working_line: 14  (9.3%)
+    student_answer: 3  (2.0%)
+    other:error_description: 2  (1.3%)
+    feedback: 1  (0.7%)
+
+* latex_parse_error (n=125)
+    feedback: 30  (24.0%)
+    graded_step_desc: 21  (16.8%)
+    review_working_line: 20  (16.0%)
+    annotation_error_text: 18  (14.4%)
+    graded_step_working_line: 12  (9.6%)
+    student_answer: 6  (4.8%)
+    graded_step_student_work: 6  (4.8%)
+    ai_solution: 5  (4.0%)
+    graded_step_explanation: 5  (4.0%)
+    annotation_other: 2  (1.6%)
+
+* bad_super_or_subscript (n=30)
+    review_working_line: 10  (33.3%)
+    ai_answer: 9  (30.0%)
+    graded_step_working_line: 4  (13.3%)
+    student_answer: 3  (10.0%)
+    graded_step_student_work: 1  (3.3%)
+    graded_step_explanation: 1  (3.3%)
+    feedback: 1  (3.3%)
+    other:error_description: 1  (3.3%)
+
+* html_or_markdown_mixed_text (n=25)
+    authored_question: 24  (96.0%)
+    question_short_prompt: 1  (4.0%)
+
+* unsupported_latex_command (n=18)
+    ai_solution: 13  (72.2%)
+    ai_answer: 2  (11.1%)
+    graded_step_student_work: 2  (11.1%)
+    graded_step_working_line: 1  (5.6%)
+
+* display_or_mode_conflict (n=5)
+    feedback: 3  (60.0%)
+    graded_step_explanation: 2  (40.0%)

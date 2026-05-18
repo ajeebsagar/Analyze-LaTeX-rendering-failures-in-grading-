@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LaTeX Renderer Inspector</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- =================== TOP BAR =================== -->
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">⚙</span>
+    <span class="title">LaTeX Renderer Inspector</span>
+    <span class="subtitle" id="meta-line">loading…</span>
+  </div>
+  <div class="topbar-actions">
+    <input id="search" type="search" placeholder="Search id / raw text / repair / family…" />
+    <button id="reset-filters" class="btn">Reset filters</button>
+  </div>
+</header>
+
+<!-- =================== DASHBOARD =================== -->
+<section class="dashboard">
+  <div class="stat-card">
+    <div class="stat-label">Sampled rows</div>
+    <div class="stat-value" id="stat-total">—</div>
+  </div>
+  <div class="stat-card stat-ok">
+    <div class="stat-label">Rendered as math</div>
+    <div class="stat-value" id="stat-math">—</div>
+  </div>
+  <div class="stat-card stat-warn">
+    <div class="stat-label">Repaired</div>
+    <div class="stat-value" id="stat-repair">—</div>
+  </div>
+  <div class="stat-card stat-fail">
+    <div class="stat-label">Fallback</div>
+    <div class="stat-value" id="stat-fallback">—</div>
+  </div>
+  <div class="dashboard-chart">
+    <div class="chart-title">Bucket distribution</div>
+    <div id="bucket-chart" class="bar-chart"></div>
+  </div>
+  <div class="dashboard-chart">
+    <div class="chart-title">Repairs applied</div>
+    <div id="repair-chart" class="bar-chart"></div>
+  </div>
+  <div class="dashboard-chart">
+    <div class="chart-title">Source families</div>
+    <div id="family-chart" class="bar-chart"></div>
+  </div>
+</section>
+
+<!-- =================== PIPELINE WHITEBOARD =================== -->
+<section class="whiteboard">
+  <div class="whiteboard-title">Pipeline whiteboard — selected row trace</div>
+  <div class="whiteboard-stages" id="whiteboard-stages">
+    <div class="stage" data-stage="detect">
+      <div class="stage-name">1. Detect</div>
+      <div class="stage-desc">State-machine tokenizer<br><code>$..$ \(..\) \[..\] $$..$$</code></div>
+      <div class="stage-status" id="stage-detect">—</div>
+    </div>
+    <div class="stage-arrow">→</div>
+    <div class="stage" data-stage="classify">
+      <div class="stage-name">2. Classify</div>
+      <div class="stage-desc">Math-intent score<br>HTML / currency / fill-blank / corruption signals</div>
+      <div class="stage-status" id="stage-classify">—</div>
+    </div>
+    <div class="stage-arrow">→</div>
+    <div class="stage" data-stage="repair">
+      <div class="stage-name">3. Repair</div>
+      <div class="stage-desc">Tier 1 deterministic<br>Tier 2 confidence-gated</div>
+      <div class="stage-status" id="stage-repair">—</div>
+    </div>
+    <div class="stage-arrow">→</div>
+    <div class="stage" data-stage="validate">
+      <div class="stage-name">4. Validate</div>
+      <div class="stage-desc">Brace / depth / subscript<br>Forbidden command check</div>
+      <div class="stage-status" id="stage-validate">—</div>
+    </div>
+    <div class="stage-arrow">→</div>
+    <div class="stage" data-stage="render">
+      <div class="stage-name">5. Render</div>
+      <div class="stage-desc">KaTeX (browser)<br>per-segment isolation</div>
+      <div class="stage-status" id="stage-render">—</div>
+    </div>
+    <div class="stage-arrow">→</div>
+    <div class="stage" data-stage="fallback">
+      <div class="stage-name">6. Fallback</div>
+      <div class="stage-desc">HTML-escaped span<br>never re-parses</div>
+      <div class="stage-status" id="stage-fallback">—</div>
+    </div>
+  </div>
+  <div class="whiteboard-current">
+    <span class="meta-label">Selected row:</span>
+    <span id="current-id" class="meta-value">—</span>
+    <span class="meta-sep">·</span>
+    <span id="current-buckets" class="meta-value">—</span>
+  </div>
+</section>
+
+<!-- =================== LIVE HEAL =================== -->
+<section class="live-heal">
+  <div class="section-title">Live auto-heal — try any LaTeX</div>
+  <div class="live-grid">
+    <div>
+      <label>Input:</label>
+      <textarea id="live-input" placeholder="Paste broken LaTeX here…">\alpha + eta = -\frac{1}{6}</textarea>
+      <label>Source family:
+        <select id="live-family">
+          <option value="rubric_criterion" selected>rubric_criterion</option>
+          <option value="ai_solution">ai_solution</option>
+          <option value="feedback">feedback</option>
+          <option value="student_answer">student_answer</option>
+          <option value="authored_question">authored_question</option>
+          <option value="review_working_line">review_working_line</option>
+        </select>
+      </label>
+    </div>
+    <div>
+      <label>Healed output (KaTeX-ready):</label>
+      <div id="live-prepared" class="prepared-box">—</div>
+      <label>Rendered (KaTeX):</label>
+      <div id="live-rendered" class="rendered-box">—</div>
+      <div id="live-meta" class="live-meta"></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== MAIN LAYOUT =================== -->
+<main class="main-layout">
+
+  <!-- ============== FILTER SIDEBAR ============== -->
+  <aside class="filters">
+    <div class="filter-group">
+      <div class="filter-title">Outcome</div>
+      <div id="filter-outcome" class="filter-chips"></div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-title">Bucket</div>
+      <div id="filter-bucket" class="filter-chips"></div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-title">Repair applied</div>
+      <div id="filter-repair" class="filter-chips"></div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-title">Source family</div>
+      <div id="filter-family" class="filter-chips"></div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-title">UI surface</div>
+      <div id="filter-surface" class="filter-chips"></div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-title">Original category (dataset label)</div>
+      <div id="filter-category" class="filter-chips"></div>
+    </div>
+  </aside>
+
+  <!-- ============== ROWS LIST ============== -->
+  <section class="rows-panel">
+    <div class="rows-header">
+      <div id="rows-summary">—</div>
+      <div class="rows-sort">
+        Sort:
+        <select id="sort-by">
+          <option value="default">default</option>
+          <option value="repairs">most repairs first</option>
+          <option value="fallback">fallback first</option>
+          <option value="length">longest raw first</option>
+        </select>
+      </div>
+    </div>
+    <div id="rows-list"></div>
+  </section>
+
+</main>
+
+<script src="../renderer.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

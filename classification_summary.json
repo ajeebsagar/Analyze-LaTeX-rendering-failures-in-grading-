@@ -1,0 +1,54 @@
+{
+  "total": 467886,
+  "by_category": {
+    "renders_correctly": 190167,
+    "plain_text_no_math": 167417,
+    "likely_math_missing_delimiters": 54041,
+    "missing_math_delimiters": 38387,
+    "tricky_false_positive": 16524,
+    "unbalanced_dollar": 192,
+    "bad_brace_balance": 804,
+    "latex_parse_error": 125,
+    "display_or_mode_conflict": 5,
+    "html_or_markdown_mixed_text": 25,
+    "katex_parse_error": 151,
+    "unsupported_latex_command": 18,
+    "bad_super_or_subscript": 30
+  },
+  "by_tenant": {
+    "tenant_001": 36496,
+    "tenant_002": 526,
+    "tenant_003": 2623,
+    "tenant_004": 123325,
+    "tenant_005": 545,
+    "tenant_006": 233990,
+    "tenant_007": 7796,
+    "tenant_008": 504,
+    "tenant_009": 184,
+    "tenant_010": 23035,
+    "tenant_011": 804,
+    "tenant_012": 38058
+  },
+  "by_ui_surface": {
+    "question_body": 48246,
+    "rubric_or_steps": 169894,
+    "student_answer": 13763,
+    "feedback": 32390,
+    "student_work_line": 167314,
+    "annotation": 36279
+  },
+  "by_explicit_status": {
+    "renders_correctly": 190167,
+    "plain_text_no_math": 167442,
+    "renders_but_suspicious": 54460,
+    "renders_as_raw_latex": 38600,
+    "plain_text_or_currency_risk": 16524,
+    "does_not_render": 693
+  },
+  "by_trusted_status": {
+    "renders_correctly": 282594,
+    "plain_text_no_math": 167443,
+    "plain_text_or_currency_risk": 16524,
+    "does_not_render": 1325
+  }
+}

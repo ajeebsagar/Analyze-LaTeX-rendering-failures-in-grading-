@@ -1,0 +1,356 @@
+========== unbalanced_dollar ==========
+[question_body | assignment_question.short_prompt]
+The relation $f$ is defined by $f(x) = \begin{cases} x^2, & 0 \leq x \leq 3 \\ 9x, & 3 \leq x \leq 10 \end{cases}$ and the relation $g$ is defined by $g(x) = \begin{cases} x^2, & 0 \leq x \leq 5 \\ 3x...
+---
+[question_body | assignment_question.short_prompt]
+Let $A, B$ be any two (non-empty) sets and $R$ be a relation from $A$ to $B$, then inverse of relation $R$ denoted by $R^{-1}$ is a relation from $B$ to $A$ i.e. $R^{-1} \subseteq B \times A$.
+Also, $...
+---
+[question_body | assignment_question.body.ai_solution]
+Step 1: Identify the formula for electric potential due to point charges.
+The electric potential $V$ at a distance $r$ from a point charge $q$ is given by $V = \frac{1}{4\pi\epsilon_0} \frac{q}{r}$. For a system of two charges, the net potential at any point is the algebraic sum of the potentials due to each charge: $V = V_1 + V_2 = \frac{1}{4\pi\epsilon_0} \left( \frac{q_1}{r_1} + \frac{q_2}{r_2}
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[0].working_lines[5].text]
+\therefore$ The quadratic polynomial formed is
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[2].working_lines[7].text]
+\therefore$ The remainder will be 64 if p(x) is divided by (x + 2).
+---
+[student_answer | graded_item.student_answer]
+10). $[M]$, mass of boulder.
+$[LT^{-2}]$, velocity of flowing river.
+$[MT^{-3}]$, density of water.
+$[LT^{-3}]$, acceleration due to gravity
+$[M] = \frac{[LT^{-2}]^{6} [MT^{-3}]}{[LT^{-3}]}
+---
+[question_body | assignment_question.short_prompt]
+From the top of an 8 m high building, the angle of elevation of the top of a cable tower is $60^\circ$ and the angle of depression of its foot is $45^\circ$. Determine the height of the tower. (Take $...
+---
+[question_body | assignment_question.short_prompt]
+Justify that the following reactions are redox reactions.
+
+i) $\mathrm{Fe}_2\mathrm{O}_3 + 3\mathrm{CO} \rightarrow 2\mathrm{Fe} + 3\mathrm{CO}_2$ (1½)
+
+ii) $4\mathrm{NH}_3 + 5\mathrm{O}_2 \rightarrow...
+---
+[question_body | assignment_question.short_prompt]
+i) Write the equation for a equilibrium constant $K_{c}$ for the reaction. (1)
+
+ii) $4 \mathrm{NH}_{3}(\mathrm{g}) + 5 \mathrm{O}_{2}(\mathrm{g}) \rightleftharpoons 4 \mathrm{NO}(\mathrm{g}) + 6 \math...
+---
+[question_body | assignment_question.short_prompt]
+Write the Henderson–Hasselbalch equation for an acidic buffer. Calculate the pH of an acidic buffer containing $0.1\,\mathrm{M}\,\mathrm{CH_3COOH}$ and $0.5\,\mathrm{M}\,\mathrm{CH_3COONa}$. [Ka for $...
+---
+[question_body | assignment_question.short_prompt]
+i) What are buffer solutions? Give an example for a buffer solution. (2)
+
+ii) Write the Henderson–Hasselbalch equation for an acidic buffer. Calculate the pH of an acidic buffer containing $0.1\,\math...
+---
+[question_body | graded_item.question_short_prompt]
+Write the Henderson–Hasselbalch equation for an acidic buffer. Calculate the pH of an acidic buffer containing $0.1\,\mathrm{M}\,\mathrm{CH_3COOH}$ and $0.5\,\mathrm{M}\,\mathrm{CH_3COONa}$. [Ka for $...
+---
+========== bad_brace_balance ==========
+[rubric_or_steps | graded_item.steps_breakdown.steps[1].description]
+Calculate the value of $\alpha + \beta + ̑\alpha\beta$.
+---
+[feedback | graded_item.feedback]
+The sum of the zeroes $\alpha + \beta$ for a polynomial $ax^2 + bx + c$ is given by $-\frac{b}{a}$. For $x^2 - 1$, $a=1$ and $b=0$, so $\alpha + eta = -\frac{0}{1} = 0$. The correct option is (d).
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[1].description]
+Calculate the value of $\alpha + \beta + ̑\alpha\beta$.
+---
+[feedback | graded_item.feedback]
+The student has only restated the given polynomial $p(x) = 6x^{3} + 3x^{2} - 5x + 1$. No attempt was made to find the sum of products of zeroes taken two at a time ($rac{c}{a}$) or the product of zeroes ($-rac{d}{a}$), which are necessary to evaluate the expression $rac{1}{\alpha} + rac{1}{\beta} + rac{1}{\gamma}$.
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[0].working_lines[3].text]
+So, \alpha = \frac{1}{\sqrt{3}} & \beta = \frac{\sqrt{3}}{2}
+---
+[feedback | graded_item.feedback]
+The student correctly identified the coefficients of the quadratic polynomial and used the relationships between the zeros and coefficients to find the sum ($\alpha + \beta = -\frac{7}{2}$) and product ($\alpha\beta = \frac{5}{2}$). The final calculation of $\alpha + \beta + ̑\alpha\beta$ was performed accurately, resulting in the correct value of -1.
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[0].student_work]
+a = 2, b = 7 & c = 5; \alpha + \beta = -\frac{b}{a} = \frac{-7}{2}; \alpha\beta = \frac{c}{a} = \frac{5}{2}
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[0].working_lines[0].text]
+a = 2, b = 7 & c = 5
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[2].student_work]
+$\frac{(-\frac{1}{6})^2 - 2(-rac{1}{3})}{-\frac{1}{3}} = \frac{\frac{1}{36} + \frac{2}{3}}{-\frac{1}{3}} = \frac{25}{36} \times -3 = -\frac{25}{12}$
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[2].working_lines[1].text]
+$\frac{(-\frac{1}{6})^2 - 2(-rac{1}{3})}{-\frac{1}{3}}$
+---
+[feedback | graded_item.feedback]
+The sum of the zeroes $\alpha + \beta$ for a polynomial $ax^2 + bx + c$ is given by $-\frac{b}{a}$. For $x^2 - 1$, $a=1$ and $b=0$, so $\alpha + eta = -\frac{0}{1} = 0$. You selected 1.
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[1].working_lines[1].text]
+\frac{-1 \times 3}{1 \times 3} + rac{4}{3} = \frac{1}{3}
+---
+========== latex_parse_error ==========
+[annotation | graded_item.review_render.annotations[0].error_text]
+= \alpha^3\beta^3(\alpha + eta) = \alpha^3\beta^3 \times 4
+---
+[annotation | graded_item.body.review_render.annotations[0].error_text]
+= \alpha^3\beta^3(\alpha + eta) = \alpha^3\beta^3 \times 4
+---
+[feedback | graded_item.feedback]
+The student correctly identified the sum and product of the zeros using the coefficients of the quadratic polynomial. They then factored the given expression $\alpha^4 \beta^3 + \alpha^3 \beta^4$ into $\alpha^3 \beta^3 (\alpha + eta)$ and substituted the values correctly to reach the final answer of 108.
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[1].description]
+Calculate the value of $\alpha + eta + \alpha\beta$.
+---
+[feedback | graded_item.feedback]
+You correctly identified the sum ($\alpha + eta = 3$) and product ($\alphaeta = -2$) of the zeroes for the given polynomial. However, you did not attempt to find the new zeroes $\frac{1}{2\alpha + \beta}$ and $\frac{1}{2\beta + \alpha}$ or form the new quadratic polynomial as requested.
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[1].working_lines[0].text]
+$\alpha + eta + eta$
+---
+[feedback | graded_item.feedback]
+The student correctly identified the sum and product of the zeros of the quadratic polynomial. They then successfully factored the expression $\alpha^4 \beta^3 + \alpha^3 \beta^4$ into $\alpha^3 \beta^3 (\alpha + eta)$ and substituted the correct values to reach the final answer of 108.
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[0].description]
+Calculate the sum of the zeroes: $\alpha + eta + 	ext{\gamma} = -3/2$.
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[1].description]
+Calculate the value of $\alpha + eta + \alpha\beta$.
+---
+[feedback | graded_item.feedback]
+The student correctly identified the sum and product of the zeros and applied the standard formula $p(x) = k[x^2 - (	ext{sum})x + 	ext{product}]$ to find the quadratic polynomial. The final expression $x^2 - 2ackslash	ext{sqrt}{3}x + 2$ is correct.
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[1].description]
+Calculate the value of $\alpha + eta + \alpha\beta$.
+---
+[feedback | graded_item.feedback]
+The student correctly identified that the sum of the zeroes $\alpha + eta$ for the polynomial $x^2 - 1$ is 0. Although the student labeled it as option (a) instead of (d), the numerical value provided (0) is correct based on the formula $-\frac{b}{a} = -\frac{0}{1} = 0$.
+---
+========== display_or_mode_conflict ==========
+[feedback | graded_item.feedback]
+The student correctly factorized the quadratic polynomial $2	ext{\sqrt{3}}x^{2} - 5x + 	ext{\sqrt{3}}$ by splitting the middle term into $-3x$ and $-2x$. They accurately identified the zeros as $\alpha = \frac{1}{\text{\sqrt{3}}}$ and $\beta = \frac{\text{\sqrt{3}}}{2}$. Furthermore, they successfully verified both the sum of zeros ($\alpha + \beta = -b/a$) and the product of zeros ($\alpha\beta =
+---
+[feedback | graded_item.feedback]
+The student correctly factorized the quadratic polynomial $2	ext{\sqrt{3}}x^{2} - 5x + 	ext{\sqrt{3}}$ using the splitting the middle term method to find the zeros $\alpha = \frac{1}{\text{\sqrt{3}}}$ and $\beta = \frac{\text{\sqrt{3}}}{2}$. They then accurately verified the relationship between the zeros and the coefficients for both the product ($\alpha\beta = \frac{c}{a}$) and the sum ($\alpha 
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[0].explanation]
+The student correctly split the middle term and solved for the zeros $\frac{1}{\text{\sqrt{3}}}$ and $\frac{\text{\sqrt{3}}}{2}$.
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[1].explanation]
+The student correctly calculated the sum of zeros and compared it to $-b/a$, showing both equal $\frac{5}{2\text{\sqrt{3}}}$.
+---
+[feedback | graded_item.feedback]
+The student correctly factorized the quadratic polynomial $2	ext{\sqrt{3}}x^{2} - 5x + 	ext{\sqrt{3}}$ by splitting the middle term into $-3x$ and $-2x$. They accurately identified the zeros as $\alpha = \frac{1}{\text{\sqrt{3}}}$ and $\beta = \frac{\text{\sqrt{3}}}{2}$. Furthermore, they successfully verified both the sum of zeros ($\alpha + \beta = -b/a$) and the product of zeros ($\alpha\beta =
+---
+========== html_or_markdown_mixed_text ==========
+[question_body | assignment_question.short_prompt]
+Find the statistics for the following data: <table><thead><tr><th>Class</th><th>5 - 15</th><th>15 - 25</th><th>25 - 35</th><th>35 - 45</th><th>45 - 55</th><th>55 - 65</th><th>65 - 75</th></tr></thead>...
+---
+[question_body | assignment_question.body.question_text]
+Find the statistics for the following data: <table><thead><tr><th>Class</th><th>5 - 15</th><th>15 - 25</th><th>25 - 35</th><th>35 - 45</th><th>45 - 55</th><th>55 - 65</th><th>65 - 75</th></tr></thead><tbody><tr><td>Frequency</td><td>6</td><td>10</td><td>16</td><td>15</td><td>24</td><td>8</td><td>7</td></tr></tbody></table>
+---
+[question_body | assignment_question.short_prompt]
+In a hospital, the ages of diabetic patients were recorded as follows. Find the median age. <table><thead><tr><th>Age (in years)</th><th>0 - 15</th><th>15 - 30</th><th>30 - 45</th><th>45 - 60</th><th>...
+---
+[question_body | assignment_question.body.question_text]
+In a hospital, the ages of diabetic patients were recorded as follows. Find the median age. <table><thead><tr><th>Age (in years)</th><th>0 - 15</th><th>15 - 30</th><th>30 - 45</th><th>45 - 60</th><th>60 - 75</th></tr></thead><tbody><tr><td>Number of patients</td><td>5</td><td>20</td><td>40</td><td>50</td><td>25</td></tr></tbody></table>
+---
+[question_body | assignment_question.short_prompt]
+<p><strong>Case Study -3</strong></p><p>Excessive use of screens can result in vision problems, obesity, sleep disorders, anxiety, low retention problems and can impede social and emotional comprehens...
+---
+[question_body | assignment_question.body.question_text]
+<p><strong>Case Study -3</strong></p><p>Excessive use of screens can result in vision problems, obesity, sleep disorders, anxiety, low retention problems and can impede social and emotional comprehension and expression. It is essential to be mindful of the amount of time we spend on screens and to reduce our screen-time by taking regular breaks, setting time limits, and engaging in non-screen-base
+---
+[question_body | assignment_question.short_prompt]
+(OR) (b) Find median and mode of the following distribution:
+
+<table><thead><tr><th>Class Interval</th><th>Frequency</th></tr></thead><tbody><tr><td>0 – 15</td><td>15</td></tr><tr><td>15 – 30</td><td>...
+---
+[question_body | assignment_question.body.question_text]
+(OR) (b) Find median and mode of the following distribution:
+
+<table><thead><tr><th>Class Interval</th><th>Frequency</th></tr></thead><tbody><tr><td>0 – 15</td><td>15</td></tr><tr><td>15 – 30</td><td>10</td></tr><tr><td>30 – 45</td><td>12</td></tr><tr><td>45 – 60</td><td>9</td></tr><tr><td>60 – 75</td><td>8</td></tr><tr><td>75 – 90</td><td>10</td></tr><tr><td>90 – 105</td><td>6</td></tr></tbody></
+---
+[question_body | assignment_question.short_prompt]
+The following table shows the number of patients of different age group who were discharged from the hospital in a particular month:
+
+<table><thead><tr><th>Age (in years)</th><th>Number of Patients Di...
+---
+[question_body | assignment_question.body.question_text]
+The following table shows the number of patients of different age group who were discharged from the hospital in a particular month:
+
+<table><thead><tr><th>Age (in years)</th><th>Number of Patients Discharged</th></tr></thead><tbody><tr><td>5 – 15</td><td>6</td></tr><tr><td>15 – 25</td><td>11</td></tr><tr><td>25 – 35</td><td>21</td></tr><tr><td>35 – 45</td><td>23</td></tr><tr><td>45 – 55</td><td>1
+---
+[question_body | assignment_question.short_prompt]
+<p>The following table shows the marks obtained by Sumit in the annual examination.</p><table><thead><tr><th>English</th><th>Maths</th><th>Hindi</th><th>Sanskrit</th><th>Science</th><th>Social Studies...
+---
+[question_body | assignment_question.body.question_text]
+<p>The following table shows the marks obtained by Sumit in the annual examination.</p><table><thead><tr><th>English</th><th>Maths</th><th>Hindi</th><th>Sanskrit</th><th>Science</th><th>Social Studies</th></tr></thead><tbody><tr><td>50</td><td>40</td><td>60</td><td>70</td><td>50</td><td>55</td></tr></tbody></table><p>Draw a bar graph to show the above informations.</p>
+---
+========== katex_parse_error ==========
+[question_body | assignment_question.short_prompt]
+The most electronegative element in the periodic table is ______
+---
+[question_body | assignment_question.body.question_text]
+The most electronegative element in the periodic table is ______
+---
+[question_body | graded_item.question_short_prompt]
+The most electronegative element in the periodic table is ______
+---
+[question_body | graded_item.question_short_prompt]
+The most electronegative element in the periodic table is ______
+---
+[question_body | assignment_question.short_prompt]
+__________ is a protocol used for retrieving emails from a mail server.
+---
+[question_body | assignment_question.body.question_text]
+__________ is a protocol used for retrieving emails from a mail server.
+---
+[question_body | assignment_question.short_prompt]
+Find the values of A and B.
+$$\begin{array}{r@{\quad}c@{\quad}c@{\quad}c} & 1 & 2 & A \\ + & 6 & A & B \\ \hline & A & 0 & 9 \end{array}$$
+---
+[question_body | assignment_question.body.question_text]
+Find the values of A and B.
+$$\begin{array}{r@{\quad}c@{\quad}c@{\quad}c} & 1 & 2 & A \\ + & 6 & A & B \\ \hline & A & 0 & 9 \end{array}$$
+---
+[question_body | assignment_question.short_prompt]
+A perfect cube of a number having 0 at its unit place, ends with _______ zeros.
+---
+[question_body | assignment_question.body.question_text]
+A perfect cube of a number having 0 at its unit place, ends with _______ zeros.
+---
+[question_body | assignment_question.short_prompt]
+A perfect cube of a number having 0 at its unit place, ends with _______ zeros.
+---
+[question_body | assignment_question.body.question_text]
+A perfect cube of a number having 0 at its unit place, ends with _______ zeros.
+---
+========== unsupported_latex_command ==========
+[question_body | assignment_question.body.ai_solution]
+Step 1: Define the DELETE command.\n\nThe DELETE command is a Data Manipulation Language (DML) command used to remove specific rows (records) from an existing table. It allows the use of a WHERE clause to filter which rows should be deleted. The table structure, including its columns and constraints, remains intact in the database.\n\nStep 2: Define the DROP command.\n\nThe DROP command is a Data 
+---
+[question_body | assignment_question.body.ai_solution]
+Step 1: Let the first term of the A.P. be $a$ and the common difference be $d$. The $n^{\text{th}}$ term of an A.P. is given by the formula $a_n = a + (n-1)d.\n\nStep 2: Express the $9^{\text{th}}$ and $13^{\text{th}}$ terms using the formula.\n$a_9 = a + (9-1)d = a + 8d$\n$a_{13} = a + (13-1)d = a + 12d$\n\nStep 3: Set up the equation based on the given condition: $9 \times a_9 = 13 \times a_{13}
+---
+[question_body | assignment_question.body.ai_solution]
+Step 1: Identify the coefficients of the quadratic polynomial $f(t) = t^2 - 4t + 3$. Here, $a = 1$, $b = -4$, and $c = 3$. The sum of the zeros $\alpha + \beta = -\frac{b}{a} = -\frac{-4}{1} = 4$. The product of the zeros $\alpha\beta = \frac{c}{a} = \frac{3}{1} = 3.\n\nStep 2: Factorize the expression $\alpha^4 \beta^3 + \alpha^3 \beta^4$. We can take the common factor $\alpha^3 \beta^3$ out: $\a
+---
+[question_body | assignment_question.body.ai_solution]
+Step 1: Analyze the geometric configuration. We are given l1 || l2 and need to find x + y in terms of w and z.
+
+Step 2: Relate the angles using parallel line properties. In a standard configuration where x and w form a linear pair on l1, x = 180 - w. If y and z are alternate interior angles, y = z.
+
+Step 3: Calculate the sum x + y.\nx + y = (180 - w) + z = 180 - w + z.
+
+Step 4: Conclusion. This ma
+---
+[question_body | assignment_question.body.ai_solution]
+Step 1: Assign variables to the costs. Let the cost of a notebook be x and the cost of a pen be y.
+
+Step 2: Translate the statement into an algebraic equation. The problem states that the cost of a notebook (x) is twice the cost of a pen (y).
+This gives the equation: x = 2y.
+
+Step 3: Rearrange the equation into standard form (ax + by + c = 0).\nx - 2y = 0.
+
+Step 4: Compare with the given options.
+
+---
+[question_body | assignment_question.body.ai_solution]
+Step 1: Understand the requirement. We need to find an irrational number between 3/8 and 5/8.
+
+Step 2: Evaluate the options.
+Option (a): (3/8) * (5/8) = 15/64. This is a rational number because it is in the form p/q.
+Option (b): sqrt((3/8) * (5/8)) = sqrt(15/64) = sqrt(15)/8. Since 15 is not a perfect square, sqrt(15) is irrational, making sqrt(15)/8 irrational.
+Option (c): 1/2(3/8 + 5/8) = 1/2(8/
+---
+[question_body | assignment_question.body.ai_answer]
+| Numbers | Addition | Subtraction | Multiplication | Division |\n| :--- | :--- | :--- | :--- | :--- |\n| Rational numbers | Yes | No | Yes | No |\n| Integers | Yes | No | Yes | No |\n| Whole numbers | Yes | No | Yes | No |\n| Natural numbers | Yes | No | Yes | No |
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[0].student_work]
+5t^2 + 12t + 7 \n 5t(t + 1) + 7(t + 1) \n (5t + 7)(t + 1)
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[2].student_work]
+\alpha + \beta = -\frac{b}{c} \n -1 + -\frac{7}{5} = -\frac{b}{c} \n \frac{-5 + (-7)}{5} = \frac{-12}{5} \n -\frac{12}{5} = -\frac{12}{5} HP \n \alpha\beta = \frac{c}{a} \n -1 \times -\frac{7}{5} = \frac{7}{5} \n \frac{7}{5} = \frac{7}{5} HP
+---
+[question_body | assignment_question.body.ai_solution]
+Step 1: Describe the repeated subtraction method.
+The repeated subtraction method involves subtracting consecutive odd numbers (1, 3, 5, ...) from the given number until the result is zero. The number of subtractions performed is the square root.
+
+Step 2: Explain why it is called the 'flop method' for large numbers.
+For a large number N, the number of steps required is √N. For example, to find the
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[0].working_lines[7].text]
+= 2x-3=0 \Rightarrow x=\frac{+3}{2} \Rightarrow \text{alpha}[\alpha] = \frac{-1}{3} \quad \text{Beta}[\beta] = \frac{3}{2}
+---
+[question_body | assignment_question.body.ai_solution]
+Step 1: Define the DELETE command.\n\nThe DELETE command is a Data Manipulation Language (DML) command used to remove specific rows (records) from an existing table. It allows the use of a WHERE clause to filter which rows should be deleted. The table structure, including its columns and constraints, remains intact in the database.\n\nStep 2: Define the DROP command.\n\nThe DROP command is a Data 
+---
+========== bad_super_or_subscript ==========
+[student_answer | graded_item.student_answer]
+Q13
+3x^2 + 4x - 4
+The '3' is coefficient of 'x^2' or '4' is coefficient of 'x', '-4' is constant.
+3x^2 - 2x + 6x - 4
+x(3x-2) + 2(3x-2)
+(x+2)(3x-2)
+x+2=0
+x=-2
+3x-2=0
+x=\frac{2}{3}
+\alpha + \beta = \frac{-b}{a}
+\alpha \times \beta = \frac{c}{a}
+a = 3
+b = 4
+c = -4
+3 \times 4 = 12
+-2 + \frac{2}{3} = \frac{-4}{3}
+\frac{-4}{3} = \frac{-4}{3}
+-2 \times \frac{2}{3} = \frac{-4}{3}
+\frac{-4}{3} = \frac{-4}{
+---
+[student_work_line | graded_item.review_render.working_lines[2].text]
+The '3' is coefficient of 'x^2' or '4' is coefficient of 'x', '-4' is constant.
+---
+[student_work_line | graded_item.body.review_render.working_lines[2].text]
+The '3' is coefficient of 'x^2' or '4' is coefficient of 'x', '-4' is constant.
+---
+[student_answer | graded_item.student_answer]
+Q. 13 3x^2 + 4x - 4
+ax^2 + bx + c = d
+3x^2 + 4x - 4 = 0
+the relation between the zeroes and the cofficents
+the value x^2 cofficent = 3
+'' '' x cofficent = 4
+and the zeroes are the value of \alpha + \beta = \frac{-b}{a}
+\alpha \beta = \frac{c}{a}
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[2].student_work]
+the value x^2 cofficent = 3
+'' '' x cofficent = 4
+and the zeroes are the value of \alpha + \beta = \frac{-b}{a}
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[2].working_lines[1].text]
+'' '' x cofficent = 4
+---
+[student_work_line | graded_item.review_render.working_lines[5].text]
+'' '' x cofficent = 4
+---
+[student_work_line | graded_item.body.review_render.working_lines[5].text]
+'' '' x cofficent = 4
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[2].explanation]
+The student failed to verify the product. They wrote an incorrect expression involving 'x^2' and did not calculate the product of the zeros found.
+---
+[feedback | graded_item.feedback]
+The response contains several lines of work that do not form a coherent mathematical argument. While the formula for the sum of zeroes is mentioned, the subsequent steps involve nonsensical expressions like '2\beta / x^2' which do not lead to a solution.
+---
+[student_answer | graded_item.student_answer]
+11 => 3x + 5x + 9x + 13x = 360^\circ = 30x = 360^\circ
+x = \frac{360^\circ}{30} = 12
+First angle : 3 \times 12^\circ = 36^\circ
+'' '' : 5 \times 12^\circ = 60^\circ
+'' '' : 9 \times 12 = 108^\circ
+'' '' : 13 \times 12 = 156^\circ
+= 36^\circ, 60^\circ, 108^\circ, 156^\circ
+---
+[rubric_or_steps | graded_item.steps_breakdown.steps[2].working_lines[1].text]
+'' '' : 5 \times 12^\circ = 60^\circ
+---

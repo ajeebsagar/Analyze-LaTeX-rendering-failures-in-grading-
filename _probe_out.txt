@@ -1,0 +1,49 @@
+### confirmed_broken (total=1500) ###
+categories: {'missing_math_delimiters': 1464, 'bad_brace_balance': 25, 'latex_parse_error': 7, 'unbalanced_dollar': 4}
+patterns:
+  has_frac: 930  (62.0%)
+  has_greek_letter: 805  (53.7%)
+  starts_with_backslash_cmd: 775  (51.7%)
+  has_caret_super: 513  (34.2%)
+  has_sqrt: 269  (17.9%)
+  has_inline_dollar_pair: 26  (1.7%)
+  has_underscore_sub: 22  (1.5%)
+  has_eta_no_backslash: 11  (0.7%)
+  has_combining_diacritic: 10  (0.7%)
+  has_rac_no_backslash: 8  (0.5%)
+  has_set_notation_braces: 4  (0.3%)
+  unbalanced_dollar: 4  (0.3%)
+  has_currency_amount: 3  (0.2%)
+  has_chemistry_mathrm: 2  (0.1%)
+  has_units_paren: 2  (0.1%)
+  unbalanced_braces: 2  (0.1%)
+  has_begin_env: 1  (0.1%)
+  has_cases_env: 1  (0.1%)
+
+### tricky (total=500) ###
+categories: {'tricky_false_positive': 500}
+patterns:
+  has_inline_dollar_pair: 500  (100.0%)
+  has_caret_super: 349  (69.8%)
+  has_currency_amount: 64  (12.8%)
+
+### confirmed_good (total=1500) ###
+categories: {'renders_correctly': 1500}
+patterns:
+  has_inline_dollar_pair: 1500  (100.0%)
+  has_caret_super: 582  (38.8%)
+  has_frac: 527  (35.1%)
+  has_greek_letter: 389  (25.9%)
+  has_currency_amount: 264  (17.6%)
+  has_sqrt: 169  (11.3%)
+  has_underscore_sub: 120  (8.0%)
+  has_set_notation_braces: 119  (7.9%)
+  has_chemistry_mathrm: 85  (5.7%)
+  has_units_paren: 83  (5.5%)
+  has_doubledollar_display: 57  (3.8%)
+  has_begin_env: 6  (0.4%)
+  has_interval_notation: 4  (0.3%)
+  has_cases_env: 3  (0.2%)
+  has_circ_degree: 3  (0.2%)
+  unbalanced_braces: 2  (0.1%)
+  has_ext_no_backslash: 2  (0.1%)

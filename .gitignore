@@ -1,0 +1,83 @@
+# ==========================================================================
+# Large dataset files (master raw + classified). Exceed GitHub's 100MB limit.
+# These should be stored in S3 / Google Drive / tenant DB, not in git.
+# ==========================================================================
+classified_candidates.jsonl
+all_candidates.jsonl
+*.tar.gz
+
+# ==========================================================================
+# Pipeline output — regeneratable by running the CLI. Some are >100MB.
+# ==========================================================================
+renderer/out/
+renderer/out_solid/
+renderer/web/inspector/data.json
+renderer/web/inspector/_synth*.json*
+
+# Per-row trace outputs (always huge, always regeneratable)
+**/results.jsonl
+**/fallback_rows.jsonl
+
+# Synthetic + scratch outputs
+renderer/_synth_dataset.jsonl
+renderer/_synth_failures.jsonl
+renderer/_probe_out.txt
+renderer/_probe_full_out.txt
+renderer/_probe_fields_out.txt
+renderer/_analysis_rare.txt
+
+# ==========================================================================
+# Python
+# ==========================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+myenv/
+venv/
+.venv/
+env/
+.env
+
+# pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ==========================================================================
+# Node
+# ==========================================================================
+node_modules/
+package-lock.json
+yarn.lock
+npm-debug.log*
+yarn-debug.log*
+
+# ==========================================================================
+# Editor / IDE
+# ==========================================================================
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# ==========================================================================
+# Build artifacts
+# ==========================================================================
+dist/
+build/
+*.pdf
+!renderer/docs/*.pdf       # whitelist: keep workflow PDFs
+
+# Logs
+*.log

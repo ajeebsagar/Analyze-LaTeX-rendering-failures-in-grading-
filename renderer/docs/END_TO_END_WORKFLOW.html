@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LaTeX Renderer Pipeline — End-to-End Workflow</title>
+<style>
+@page { size: A4; margin: 14mm 16mm 16mm 16mm; }
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #1c2025; line-height: 1.5; font-size: 11pt;
+  max-width: 100%; padding: 0; margin: 0;
+}
+h1 { font-size: 22pt; color: #102040; border-bottom: 2px solid #1764d9;
+     padding-bottom: 6px; margin-top: 18pt; page-break-after: avoid; }
+h2 { font-size: 16pt; color: #1764d9; margin-top: 14pt; page-break-after: avoid; }
+h3 { font-size: 13pt; color: #224066; margin-top: 10pt; page-break-after: avoid; }
+h4 { font-size: 12pt; color: #2c3e50; margin-top: 8pt; }
+p  { margin: 6pt 0; }
+hr { border: none; border-top: 1px solid #c4cee0; margin: 14pt 0; }
+ul, ol { margin: 4pt 0 4pt 20pt; padding: 0; }
+li { margin: 2pt 0; }
+code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  background: #eef1f6; padding: 1px 4px; border-radius: 3px;
+  font-size: 9.5pt; color: #1f2d3d;
+}
+pre {
+  background: #1e293b; color: #e2e8f0;
+  padding: 10px 12px; border-radius: 6px; overflow-x: auto;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 8.5pt; line-height: 1.4;
+  page-break-inside: avoid; white-space: pre-wrap; word-break: break-word;
+}
+pre code { background: none; color: inherit; padding: 0; }
+table {
+  border-collapse: collapse; margin: 8pt 0; width: 100%;
+  font-size: 9.5pt; page-break-inside: avoid;
+}
+th, td {
+  border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left;
+  vertical-align: top; word-break: break-word;
+}
+th { background: #eef1f6; color: #1c2025; font-weight: 600; }
+tr:nth-child(even) td { background: #fafbfd; }
+a { color: #1764d9; text-decoration: none; }
+strong { color: #102040; }
+blockquote { border-left: 3px solid #94a3c4; padding: 4px 12px; margin: 8pt 0;
+             background: #f4f6fa; color: #475569; }
+
+/* Print niceties */
+@media print {
+  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
+/* Footer with page numbers */
+.footer-line { text-align: center; color: #888; font-size: 9pt; margin-top: 12pt; }
+</style>
+</head>
+<body>
+<h1 id="end-to-end-workflow-complete-implementation-reference">End-to-End Workflow — Complete Implementation Reference</h1>
+<p>Full lifecycle of the LaTeX auto-fix pipeline: every stage, every bucket, every
+repair, every render path, with the file each piece lives in.</p>
+<hr />
+<h2 id="1-high-level-workflow">1. High-level workflow</h2>
+<div class="codehilite"><pre><span></span><code><span class="w">                              </span><span class="n">raw_text</span><span class="w"> </span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="n">DB</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">S3</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">user</span><span class="p">)</span>
+<span class="w">                                          </span><span class="err">│</span>
+<span class="w">                                          </span><span class="err">▼</span>
+<span class="w">                              </span><span class="err">┌───────────────────────┐</span>
+<span class="w">                              </span><span class="err">│</span><span class="w">   </span><span class="n">PIPELINE</span><span class="w"> </span><span class="n">BUILDER</span><span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="n">builder</span><span class="o">.</span><span class="n">py</span>
+<span class="w">                              </span><span class="err">│</span><span class="w">   </span><span class="p">(</span><span class="n">Dependency</span><span class="w"> </span><span class="n">Injection</span><span class="p">)</span><span class="err">│</span><span class="w">   </span><span class="n">constructs</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">pipeline</span>
+<span class="w">                              </span><span class="err">└───────────┬───────────┘</span>
+<span class="w">                                          </span><span class="err">▼</span>
+<span class="w">   </span><span class="err">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="w">   </span><span class="err">│</span><span class="w">                       </span><span class="n">PIPELINE</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="w">                            </span><span class="err">│</span><span class="w">   </span><span class="n">pipeline</span><span class="o">.</span><span class="n">py</span>
+<span class="w">   </span><span class="err">└─────────────────────────────────────────────────────────────────────┘</span>
+<span class="w">                                          </span><span class="err">│</span>
+<span class="w">        </span><span class="err">┌─────────────────────────────────┼─────────────────────────────┐</span>
+<span class="w">        </span><span class="err">▼</span><span class="w">                                 </span><span class="err">▼</span><span class="w">                             </span><span class="err">▼</span>
+<span class="w">   </span><span class="n">has</span><span class="w"> </span><span class="n">HTML</span><span class="w"> </span><span class="n">tags</span><span class="err">?</span><span class="w">                  </span><span class="n">pure</span><span class="w"> </span><span class="n">prose</span><span class="o">+</span><span class="n">math</span><span class="w">               </span><span class="n">math</span><span class="o">-</span><span class="n">only</span><span class="w"> </span><span class="n">field</span>
+<span class="w">        </span><span class="err">│</span><span class="w">                                 </span><span class="err">│</span><span class="w">                             </span><span class="err">│</span>
+<span class="w">        </span><span class="err">▼</span><span class="w">                                 </span><span class="err">▼</span><span class="w">                             </span><span class="err">▼</span>
+<span class="w">   </span><span class="err">┌─────────────┐</span><span class="w">               </span><span class="err">┌────────────────┐</span><span class="w">            </span><span class="err">┌──────────────────┐</span>
+<span class="w">   </span><span class="err">│</span><span class="w"> </span><span class="n">HTML</span><span class="o">-</span><span class="n">AWARE</span><span class="w">  </span><span class="err">│</span><span class="w">               </span><span class="err">│</span><span class="w"> </span><span class="n">Standard</span><span class="w"> </span><span class="n">path</span><span class="w">  </span><span class="err">│</span><span class="w">            </span><span class="err">│</span><span class="w"> </span><span class="n">wrap_math_only</span><span class="w">   </span><span class="err">│</span>
+<span class="w">   </span><span class="err">│</span><span class="w"> </span><span class="n">split</span><span class="w"> </span><span class="n">mode</span><span class="w">  </span><span class="err">│</span><span class="w">               </span><span class="err">│</span><span class="w">                </span><span class="err">│</span><span class="w">            </span><span class="err">│</span><span class="w"> </span><span class="n">wrap</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="o">$..$</span><span class="w">     </span><span class="err">│</span>
+<span class="w">   </span><span class="err">└──────┬──────┘</span><span class="w">               </span><span class="err">└────────┬───────┘</span><span class="w">            </span><span class="err">└────────┬─────────┘</span>
+<span class="w">          </span><span class="err">│</span><span class="w">                               </span><span class="err">│</span><span class="w">                             </span><span class="err">│</span>
+<span class="w">          </span><span class="err">▼</span><span class="w">                               </span><span class="err">▼</span><span class="w">                             </span><span class="err">│</span>
+<span class="w">   </span><span class="err">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="w">   </span><span class="err">│</span><span class="w"> </span><span class="n">STAGE</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">GLOBAL</span><span class="w"> </span><span class="p">(</span><span class="n">always</span><span class="o">-</span><span class="n">on</span><span class="p">)</span><span class="w">                                 </span><span class="err">│</span>
+<span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">•</span><span class="w"> </span><span class="n">NfcNormalizer</span><span class="w">                                                   </span><span class="err">│</span><span class="w">   </span><span class="n">tier1_repairs</span><span class="o">.</span><span class="n">py</span>
+<span class="w">   </span><span class="err">└─────────────────────────────────────────────────────────────────────┘</span>
+<span class="w">                                          </span><span class="err">│</span>
+<span class="w">                                          </span><span class="err">▼</span>
+<span class="w">   </span><span class="err">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="w">   </span><span class="err">│</span><span class="w"> </span><span class="n">STAGE</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">GLOBAL</span><span class="w"> </span><span class="p">(</span><span class="n">confidence</span><span class="o">-</span><span class="n">gated</span><span class="p">)</span><span class="w">                          </span><span class="err">│</span>
+<span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">•</span><span class="w"> </span><span class="n">MathOnlyWrapper</span><span class="w">                                                 </span><span class="err">│</span><span class="w">   </span><span class="n">tier2_repairs</span><span class="o">.</span><span class="n">py</span>
+<span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">•</span><span class="w"> </span><span class="n">OrphanDollarWrap</span><span class="w"> </span><span class="p">(</span><span class="n">variant</span><span class="p">)</span><span class="w"> </span><span class="err">─→</span><span class="w"> </span><span class="n">wrap_math_only_strip_orphan_dollar</span><span class="err">│</span>
+<span class="w">   </span><span class="err">└─────────────────────────────────────────────────────────────────────┘</span>
+<span class="w">                                          </span><span class="err">│</span>
+<span class="w">                                          </span><span class="err">▼</span>
+<span class="w">   </span><span class="err">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="w">   </span><span class="err">│</span><span class="w"> </span><span class="n">STAGE</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">SEGMENT</span><span class="w">                                                   </span><span class="err">│</span><span class="w">   </span><span class="n">state_machine_segmenter</span><span class="o">.</span><span class="n">py</span>
+<span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="n">Tokenize</span><span class="w"> </span><span class="o">$..$</span><span class="p">,</span><span class="w"> </span><span class="o">$$..$$</span><span class="p">,</span><span class="w"> </span>\<span class="p">(</span><span class="o">..</span>\<span class="p">),</span><span class="w"> </span>\<span class="p">[</span><span class="o">..</span>\<span class="p">]</span><span class="w"> </span><span class="n">into</span><span class="w"> </span><span class="n">Segment</span><span class="w"> </span><span class="n">objects</span><span class="w">        </span><span class="err">│</span>
+<span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">⤷</span><span class="w"> </span><span class="n">coalesce</span><span class="w"> </span><span class="n">empty</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="p">(</span><span class="n">Case</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">fix</span><span class="p">)</span><span class="w">                               </span><span class="err">│</span>
+<span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">⤷</span><span class="w"> </span><span class="n">truncation</span><span class="w"> </span><span class="n">guard</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">odd</span><span class="o">-$</span><span class="w"> </span><span class="n">count</span><span class="w">                                </span><span class="err">│</span>
+<span class="w">   </span><span class="err">└─────────────────────────────────────────────────────────────────────┘</span>
+<span class="w">                                          </span><span class="err">│</span>
+<span class="w">   </span><span class="err">┌─────────────────────┬────────────────┴───────────────────┬─────────────────┐</span>
+<span class="w">   </span><span class="err">▼</span><span class="w">                     </span><span class="err">▼</span><span class="w">                                    </span><span class="err">▼</span><span class="w">                 </span><span class="err">▼</span>
+<span class="w">   </span><span class="n">TEXT</span><span class="w">                  </span><span class="n">MATH</span><span class="w">                                 </span><span class="n">HTML</span><span class="w">              </span><span class="n">EMPTY</span>
+<span class="w">   </span><span class="p">(</span><span class="n">prose</span><span class="p">)</span><span class="w">               </span><span class="p">(</span><span class="n">between</span><span class="w"> </span><span class="n">delimiters</span><span class="p">)</span><span class="w">                 </span><span class="p">(</span><span class="n">tag</span><span class="w"> </span><span class="n">passthrough</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">skipped</span><span class="p">)</span>
+<span class="w">   </span><span class="err">│</span><span class="w">                     </span><span class="err">│</span><span class="w">                                    </span><span class="err">│</span>
+<span class="w">   </span><span class="err">▼</span><span class="w">                     </span><span class="err">▼</span><span class="w">                                    </span><span class="err">▼</span>
+<span class="err">┌──────────────┐</span><span class="w">  </span><span class="err">┌──────────────────────────────────┐</span><span class="w">  </span><span class="err">┌─────────────┐</span>
+<span class="err">│</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">prose</span><span class="w"> </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="n">CLASSIFY</span><span class="w"> </span><span class="p">(</span><span class="n">math</span><span class="w"> </span><span class="n">intent</span><span class="w"> </span><span class="n">confidence</span><span class="p">)</span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="n">verbatim</span><span class="w">    </span><span class="err">│</span>
+<span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">literal</span>\<span class="n">n</span><span class="w">  </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="n">score</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span><span class="k">signal</span><span class="w"> </span><span class="n">detectors</span><span class="w">    </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="n">passthrough</span><span class="w"> </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">newline</span><span class="w">  </span><span class="err">│</span><span class="w">  </span><span class="err">└────────────────┬─────────────────┘</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="p">(</span><span class="n">no</span><span class="w"> </span><span class="n">parse</span><span class="p">)</span><span class="w">  </span><span class="err">│</span>
+<span class="err">└──────┬───────┘</span><span class="w">                   </span><span class="err">▼</span><span class="w">                    </span><span class="err">└─────────────┘</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">┌──────────────────────┐</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">MATH</span><span class="w"> </span><span class="p">(</span><span class="n">always</span><span class="p">)</span><span class="w"> </span><span class="err">│</span><span class="w">   </span><span class="n">tier1_repairs</span><span class="o">.</span><span class="n">py</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">strip_diacritics</span><span class="w">   </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">└──────────┬───────────┘</span>
+<span class="w">       </span><span class="err">│</span><span class="w">                         </span><span class="err">▼</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">┌────────────────────────────────────┐</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">MATH</span><span class="w"> </span><span class="p">(</span><span class="n">gated</span><span class="p">:</span><span class="w"> </span><span class="n">score</span><span class="err">≥</span><span class="mf">0.7</span><span class="w"> </span><span class="n">OR</span><span class="w">   </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="n">corruption</span><span class="w"> </span><span class="k">signal</span><span class="p">)</span><span class="w">                 </span><span class="err">│</span><span class="w">   </span><span class="n">tier2_repairs</span><span class="o">.</span><span class="n">py</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">OrphanBackslashRepairer</span><span class="w">          </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w">   </span><span class="err">↳</span><span class="w"> </span><span class="n">repair_orphan_eta_to_beta</span><span class="w">      </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w">   </span><span class="err">↳</span><span class="w"> </span><span class="n">repair_orphan_rac</span><span class="w">              </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w">   </span><span class="err">↳</span><span class="w"> </span><span class="n">repair_orphan_ext</span><span class="w">              </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w">   </span><span class="err">↳</span><span class="w"> </span><span class="n">repair_alphaeta</span><span class="w">                </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w">   </span><span class="err">↳</span><span class="w"> </span><span class="n">repair_orphan_greek</span><span class="w">            </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">FillBlankInTextRepairer</span><span class="w">          </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">MissingFracPrefixRepairer</span><span class="w">        </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">└──────────┬─────────────────────────┘</span>
+<span class="w">       </span><span class="err">│</span><span class="w">                         </span><span class="err">▼</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">┌──────────────────────────┐</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="n">VALIDATOR</span><span class="w"> </span><span class="p">(</span><span class="n">composite</span><span class="p">)</span><span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="n">validators</span><span class="o">.</span><span class="n">py</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">NonEmpty</span><span class="w">               </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">MaxLength</span><span class="w">              </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">BraceBalance</span><span class="w">           </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">SubscriptRun</span><span class="w"> </span><span class="p">(</span><span class="n">___</span><span class="w"> </span><span class="p">)</span><span class="w">    </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">ForbiddenCommand</span><span class="w">       </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w"> </span><span class="p">(</span><span class="n">empty</span><span class="o">-</span><span class="n">after</span><span class="o">-</span><span class="n">repair</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">demote</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">TEXT</span><span class="p">)</span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">└──────────┬───────────────┘</span>
+<span class="w">       </span><span class="err">│</span><span class="w">                         </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">┌──────────┴──────────────┐</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">▼</span><span class="w">                         </span><span class="err">▼</span>
+<span class="w">       </span><span class="err">│</span><span class="w">           </span><span class="n">valid</span><span class="w">                    </span><span class="n">rejected</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">│</span><span class="w">                         </span><span class="err">│</span>
+<span class="w">       </span><span class="err">│</span><span class="w">              </span><span class="err">▼</span><span class="w">                         </span><span class="err">▼</span>
+<span class="w">       </span><span class="err">│</span><span class="w">     </span><span class="err">┌──────────────────┐</span><span class="w">      </span><span class="err">┌──────────────────────┐</span>
+<span class="w">       </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="o">&lt;</span><span class="n">span</span><span class="w"> </span><span class="k">class</span><span class="o">=</span><span class="w">     </span><span class="err">│</span><span class="w">      </span><span class="err">│</span><span class="w"> </span><span class="n">HtmlFallbackRenderer</span><span class="w"> </span><span class="err">│</span><span class="w">   </span><span class="n">html_fallback</span><span class="o">.</span><span class="n">py</span>
+<span class="w">       </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="s2">&quot;latex-math&quot;</span><span class="w">    </span><span class="err">│</span><span class="w">      </span><span class="err">│</span><span class="w"> </span><span class="o">&lt;</span><span class="n">span</span><span class="w"> </span><span class="k">class</span><span class="o">=</span><span class="s2">&quot;latex-  │</span>
+<span class="w">       </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="n">data</span><span class="o">-</span><span class="n">math</span><span class="o">=</span><span class="err">…</span><span class="o">&gt;</span><span class="w">    </span><span class="err">│</span><span class="w">      </span><span class="err">│</span><span class="w">  </span><span class="n">fallback</span><span class="s2">&quot; …&gt;        │</span>
+<span class="w">       </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="o">$...$</span><span class="w">           </span><span class="err">│</span><span class="w">      </span><span class="err">└──────────────────────┘</span>
+<span class="w">       </span><span class="err">│</span><span class="w">     </span><span class="err">└──────────────────┘</span>
+<span class="w">       </span><span class="err">│</span>
+<span class="w">       </span><span class="err">▼</span>
+<span class="w">   </span><span class="n">html_escape</span><span class="p">(</span><span class="n">prose</span><span class="p">),</span><span class="w"> </span>\<span class="n">n</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+<span class="w">                                  </span><span class="err">│</span>
+<span class="w">                                  </span><span class="err">▼</span>
+<span class="w">   </span><span class="err">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="w">   </span><span class="err">│</span><span class="w"> </span><span class="n">STAGE</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">BUCKET</span><span class="w"> </span><span class="n">LABEL</span><span class="w">                                              </span><span class="err">│</span><span class="w">   </span><span class="n">bucket_labeler</span><span class="o">.</span><span class="n">py</span>
+<span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="n">Map</span><span class="w"> </span><span class="n">repairs</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">validation</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">signals</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">bucket</span><span class="w"> </span><span class="n">A</span><span class="o">..</span><span class="n">L</span><span class="p">,</span><span class="w"> </span><span class="n">Z</span><span class="w">              </span><span class="err">│</span>
+<span class="w">   </span><span class="err">└─────────────────────────────────────────────────────────────────────┘</span>
+<span class="w">                                  </span><span class="err">│</span>
+<span class="w">                                  </span><span class="err">▼</span>
+<span class="w">                       </span><span class="n">PipelineResult</span><span class="w"> </span><span class="n">dataclass</span>
+<span class="w">                       </span><span class="p">(</span><span class="n">prepared_text</span><span class="p">,</span><span class="w"> </span><span class="n">html</span><span class="p">,</span><span class="w"> </span><span class="n">segments</span><span class="p">,</span>
+<span class="w">                        </span><span class="n">repairs_applied</span><span class="p">,</span><span class="w"> </span><span class="n">failure_reasons</span><span class="p">,</span>
+<span class="w">                        </span><span class="n">buckets</span><span class="p">)</span>
+<span class="w">                                  </span><span class="err">│</span>
+<span class="w">                                  </span><span class="err">▼</span>
+<span class="w">                       </span><span class="err">┌─────────────────────────┐</span>
+<span class="w">                       </span><span class="err">│</span><span class="w"> </span><span class="n">Browser</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">Node</span><span class="w">          </span><span class="err">│</span>
+<span class="w">                       </span><span class="err">│</span><span class="w"> </span><span class="err">────────────────────</span><span class="w">    </span><span class="err">│</span>
+<span class="w">                       </span><span class="err">│</span><span class="w"> </span><span class="n">KaTeX</span><span class="w"> </span><span class="n">auto</span><span class="o">-</span><span class="n">render</span><span class="w">       </span><span class="err">│</span><span class="w">   </span><span class="n">web</span><span class="o">/</span><span class="n">inspector</span><span class="o">/</span><span class="n">index</span><span class="o">.</span><span class="n">html</span>
+<span class="w">                       </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">throwOnError</span><span class="p">:</span><span class="bp">false</span><span class="w">    </span><span class="err">│</span>
+<span class="w">                       </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">strict</span><span class="p">:</span><span class="s1">&#39;ignore&#39;</span><span class="w">       </span><span class="err">│</span>
+<span class="w">                       </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">trust</span><span class="p">:</span><span class="bp">false</span><span class="w">           </span><span class="err">│</span>
+<span class="w">                       </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="n">maxExpand</span><span class="p">:</span><span class="mi">1000</span><span class="w">        </span><span class="err">│</span>
+<span class="w">                       </span><span class="err">└─────────────────────────┘</span>
+<span class="w">                                  </span><span class="err">│</span>
+<span class="w">                                  </span><span class="err">▼</span>
+<span class="w">                          </span><span class="n">rendered</span><span class="w"> </span><span class="n">HTML</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">math</span>
+</code></pre></div>
+
+<hr />
+<h2 id="2-bucket-reference-every-failure-shape-we-recognize">2. Bucket reference (every failure shape we recognize)</h2>
+<p>Each input is labeled with one or more bucket codes by <code>BucketLabeler</code>
+(<code>bucket_labeler.py</code>). A row can fire multiple buckets simultaneously.</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Name</th>
+<th>What triggers it</th>
+<th>Auto-fix</th>
+<th>KaTeX error if unfixed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A</strong></td>
+<td><code>missing_delimiters</code></td>
+<td><code>\alpha + \beta = ...</code> (raw command without <code>$..$</code>)</td>
+<td><code>wrap_math_only</code></td>
+<td>silent — renders as plain text in browser auto-render mode</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td><code>broken_braces</code></td>
+<td>Unbalanced <code>{...</code> or <code>...}</code></td>
+<td><code>MissingFracPrefixRepairer</code> for <code>X}{Y}</code>; else fallback</td>
+<td><code>Expected '}'</code> at end of input, or <code>Expected 'EOF', got '}'</code></td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td><code>unbalanced_dollar</code></td>
+<td>Odd count of unescaped <code>$</code></td>
+<td><code>wrap_math_only_strip_orphan_dollar</code> OR segmenter truncation guard</td>
+<td><code>Can't use function '$' in math mode</code></td>
+</tr>
+<tr>
+<td><strong>D</strong></td>
+<td><code>ocr_corruption</code></td>
+<td>Orphan <code>eta</code>, <code>rac</code>, <code>ext</code>, <code>alphaeta</code>, combining diacritics</td>
+<td><code>repair_orphan_eta_to_beta</code>, <code>repair_orphan_rac</code>, <code>repair_orphan_ext</code>, <code>repair_alphaeta</code>, <code>repair_orphan_greek</code>, <code>strip_combining_diacritics</code></td>
+<td>usually silent (wrong render); diacritic = <code>Expected 'EOF', got '&lt;char&gt;'</code></td>
+</tr>
+<tr>
+<td><strong>E</strong></td>
+<td><code>invalid_command_name</code></td>
+<td><code>\input</code>, <code>\write</code>, <code>\href</code>, etc. (security-blocked)</td>
+<td>none — fallback</td>
+<td><code>Undefined control sequence: \&lt;cmd&gt;</code></td>
+</tr>
+<tr>
+<td><strong>F</strong></td>
+<td><code>unsupported_environment</code></td>
+<td><code>&lt;table&gt;</code>, <code>&lt;p&gt;</code>, <code>&lt;br&gt;</code> etc.</td>
+<td><strong>HTML-aware split</strong>: tags passthrough, math inside still renders</td>
+<td><code>No such environment: &lt;name&gt;</code> or <code>Unsupported character</code></td>
+</tr>
+<tr>
+<td><strong>G</strong></td>
+<td><code>mixed_prose_math</code></td>
+<td>Normal prose with <code>$..$</code> math (control bucket — usually valid)</td>
+<td>none needed</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><strong>H</strong></td>
+<td><code>false_positive</code></td>
+<td><code>_______</code> fill-blanks, single Greek letters in prose</td>
+<td><code>FillBlankInTextRepairer</code> converts to <code>\rule</code>; else skip math</td>
+<td><code>Expected group after '_'</code></td>
+</tr>
+<tr>
+<td><strong>I</strong></td>
+<td><code>code_snippet</code></td>
+<td>Triple-backtick fences, <code>&lt;pre&gt;</code>, inline <code>`code`</code></td>
+<td>route to fallback (HTML-render path); no math parsing</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><strong>J</strong></td>
+<td><code>currency_text</code></td>
+<td><code>$5</code>, <code>$10 each</code>, <code>Cost: $100 USD</code> in prose</td>
+<td>none — pipeline correctly leaves alone</td>
+<td><code>Can't use function '$' in math mode</code> (if treated as math)</td>
+</tr>
+<tr>
+<td><strong>K</strong></td>
+<td><code>nested_parser_corruption</code></td>
+<td><code>\frac{1}{\text{\sqrt{3}}}</code> (math inside text inside math)</td>
+<td>passthrough — KaTeX strict='ignore' handles</td>
+<td><code>Can't use function '\sqrt' in text mode</code></td>
+</tr>
+<tr>
+<td><strong>L</strong></td>
+<td><code>multiline_ai_solution</code></td>
+<td>Literal <code>\n</code> from JSON serialization round-trip</td>
+<td><code>literal_escape_to_whitespace</code></td>
+<td><code>Undefined control sequence: \n&lt;word&gt;</code></td>
+</tr>
+<tr>
+<td><strong>Z</strong></td>
+<td><code>clean</code></td>
+<td>No issues detected</td>
+<td>none</td>
+<td>n/a</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-repair-reference-every-named-repair-the-pipeline-can-apply">3. Repair reference (every named repair the pipeline can apply)</h2>
+<p><code>pipeline_result.repairs_applied</code> is a list of these names. Every repair is
+<strong>pure</strong>, <strong>idempotent</strong>, and <strong>render-time only</strong> (never mutates the DB).</p>
+<table>
+<thead>
+<tr>
+<th>Repair name</th>
+<th>File</th>
+<th>Tier</th>
+<th>Scope</th>
+<th>What it does</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nfc_normalize</code></td>
+<td>tier1_repairs.py</td>
+<td>1</td>
+<td>global</td>
+<td>Unicode NFC normalize</td>
+<td>combining-form chars collapse</td>
+</tr>
+<tr>
+<td><code>strip_combining_diacritics</code></td>
+<td>tier1_repairs.py</td>
+<td>1</td>
+<td>math segment</td>
+<td>Remove U+0300..U+036F</td>
+<td><code>$\alpha+̑\beta$</code> → <code>$\alpha+\beta$</code></td>
+</tr>
+<tr>
+<td><code>literal_escape_to_whitespace</code></td>
+<td>tier1_repairs.py</td>
+<td>1</td>
+<td>prose</td>
+<td><code>\n</code>/<code>\t</code>/<code>\r</code> literal → real whitespace</td>
+<td><code>Step 1.\nStep 2.</code> → <code>Step 1.&lt;NL&gt;Step 2.</code></td>
+</tr>
+<tr>
+<td><code>wrap_math_only</code></td>
+<td>tier2_repairs.py</td>
+<td>2</td>
+<td>global</td>
+<td>Wrap math-only content in <code>$..$</code></td>
+<td><code>\frac{1}{2}</code> → <code>$\frac{1}{2}$</code></td>
+</tr>
+<tr>
+<td><code>wrap_math_only_strip_orphan_dollar</code></td>
+<td>tier2_repairs.py</td>
+<td>2</td>
+<td>global</td>
+<td>Strip orphan trailing/leading <code>$</code>, then wrap</td>
+<td><code>\alpha = 1$</code> → <code>$\alpha = 1$</code></td>
+</tr>
+<tr>
+<td><code>repair_orphan_eta_to_beta</code></td>
+<td>tier2_repairs.py</td>
+<td>2</td>
+<td>math</td>
+<td><code>eta</code> (no <code>\</code>) → <code>\beta</code></td>
+<td><code>$\alpha + eta$</code> → <code>$\alpha + \beta$</code></td>
+</tr>
+<tr>
+<td><code>repair_orphan_rac</code></td>
+<td>tier2_repairs.py</td>
+<td>2</td>
+<td>math</td>
+<td><code>rac{a}{b}</code> → <code>\frac{a}{b}</code></td>
+<td><code>rac{1}{2}</code> → <code>\frac{1}{2}</code></td>
+</tr>
+<tr>
+<td><code>repair_orphan_ext</code></td>
+<td>tier2_repairs.py</td>
+<td>2</td>
+<td>math</td>
+<td><code>ext{X}</code> → <code>\text{X}</code></td>
+<td><code>ext{red}</code> → <code>\text{red}</code></td>
+</tr>
+<tr>
+<td><code>repair_alphaeta</code></td>
+<td>tier2_repairs.py</td>
+<td>2</td>
+<td>math</td>
+<td><code>alphaeta</code> (glued) → <code>\alpha\beta</code></td>
+<td><code>$alphaeta$</code> → <code>$\alpha\beta$</code></td>
+</tr>
+<tr>
+<td><code>repair_orphan_greek</code></td>
+<td>tier2_repairs.py</td>
+<td>2</td>
+<td>math</td>
+<td>bare <code>beta</code>/<code>gamma</code>/etc → <code>\beta</code>/<code>\gamma</code> (context-checked)</td>
+<td><code>+ gamma +</code> → <code>+ \gamma +</code></td>
+</tr>
+<tr>
+<td><code>repair_fill_blank_in_text</code></td>
+<td>tier2_repairs.py</td>
+<td>2</td>
+<td>math</td>
+<td><code>\text{___}</code> → <code>\text{\rule{Nem}{0.4pt}}</code></td>
+<td><code>\text{_______}</code> → <code>\text{\rule{6em}{0.4pt}}</code></td>
+</tr>
+<tr>
+<td><code>repair_missing_frac_prefix</code></td>
+<td>tier2_repairs.py</td>
+<td>2</td>
+<td>math</td>
+<td><code>X}{Y}</code> with extra <code>}</code> → <code>\frac{X}{Y}</code></td>
+<td><code>1}{2}</code> → <code>\frac{1}{2}</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tier 1</strong> runs unconditionally. <strong>Tier 2</strong> runs only when classifier confidence
+≥ 0.7 OR a corruption signal is detected.</p>
+<hr />
+<h2 id="4-render-path-reference-what-the-output-html-looks-like">4. Render-path reference (what the output HTML looks like)</h2>
+<table>
+<thead>
+<tr>
+<th>Outcome</th>
+<th>Segment kind</th>
+<th>HTML emitted</th>
+<th>Rendered by KaTeX?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MATH</code></td>
+<td><code>math_inline</code>, <code>math_display</code>, <code>math_paren</code>, <code>math_bracket</code></td>
+<td><code>&lt;span class="latex-math" data-math="inline\|display"&gt;$...$&lt;/span&gt;</code></td>
+<td>✅ yes (KaTeX auto-render walks <code>.latex-math</code>)</td>
+</tr>
+<tr>
+<td><code>TEXT</code></td>
+<td><code>text</code></td>
+<td>escaped string, <code>\n</code> → <code>&lt;br&gt;</code></td>
+<td>❌ no (plain DOM)</td>
+</tr>
+<tr>
+<td><code>HTML</code></td>
+<td><code>html</code></td>
+<td>the original HTML tag verbatim (e.g., <code>&lt;table&gt;</code>, <code>&lt;/tr&gt;</code>)</td>
+<td>❌ no (rendered by browser HTML engine)</td>
+</tr>
+<tr>
+<td><code>FALLBACK</code></td>
+<td>any</td>
+<td><code>&lt;span class="latex-fallback" data-render-reason="..."&gt;...&lt;/span&gt;</code></td>
+<td>❌ no (escaped raw content, never re-parsed)</td>
+</tr>
+</tbody>
+</table>
+<p>The browser's KaTeX auto-render-min.js script picks up <code>&lt;span class="latex-math"&gt;</code>
+elements and replaces their content with rendered math. Everything else is
+plain DOM and renders natively.</p>
+<hr />
+<h2 id="5-component-file-map">5. Component file map</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">renderer</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">src</span><span class="o">/</span><span class="n">latex_pipeline</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">core</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">interfaces</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="n">Protocols</span><span class="w"> </span><span class="p">(</span><span class="n">ISegmenter</span><span class="p">,</span><span class="w"> </span><span class="n">IClassifier</span><span class="p">,</span><span class="w"> </span><span class="n">IRepairer</span><span class="p">,</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                        </span><span class="n">IValidator</span><span class="p">,</span><span class="w"> </span><span class="n">IFallbackRenderer</span><span class="p">,</span><span class="w"> </span><span class="n">IBucketLabeler</span><span class="p">,</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                        </span><span class="n">IFamilyResolver</span><span class="p">,</span><span class="w"> </span><span class="n">ISignalDetector</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">models</span><span class="o">.</span><span class="n">py</span><span class="w">            </span><span class="n">Dataclasses</span><span class="w"> </span><span class="p">(</span><span class="n">Segment</span><span class="p">,</span><span class="w"> </span><span class="n">SegmentResult</span><span class="p">,</span><span class="w"> </span><span class="n">PipelineResult</span><span class="p">,</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                        </span><span class="n">ClassificationResult</span><span class="p">,</span><span class="w"> </span><span class="n">ValidationResult</span><span class="p">,</span><span class="w"> </span><span class="n">RepairOutcome</span><span class="p">,</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                        </span><span class="n">RenderOutcome</span><span class="w"> </span><span class="k">enum</span><span class="p">,</span><span class="w"> </span><span class="n">SegmentKind</span><span class="w"> </span><span class="k">enum</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">exceptions</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="n">LatexPipelineError</span><span class="p">,</span><span class="w"> </span><span class="n">InvalidSegmentError</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">segmentation</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">state_machine_segmenter</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="n">Splits</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="n">into</span><span class="w"> </span><span class="n">Segments</span><span class="o">.</span><span class="w"> </span><span class="n">Handles</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                                    </span><span class="o">$..$</span><span class="p">,</span><span class="w"> </span><span class="o">$$..$$</span><span class="p">,</span><span class="w"> </span>\<span class="p">(</span><span class="o">..</span>\<span class="p">),</span><span class="w"> </span>\<span class="p">[</span><span class="o">..</span>\<span class="p">],</span><span class="w"> </span><span class="n">escaped</span><span class="w"> </span>\<span class="o">$</span><span class="p">,</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                                    </span><span class="n">odd</span><span class="o">-</span><span class="n">dollar</span><span class="w"> </span><span class="n">truncation</span><span class="w"> </span><span class="n">guard</span><span class="p">,</span><span class="w"> </span><span class="n">empty</span><span class="o">-</span><span class="n">math</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                                    </span><span class="n">coalescing</span><span class="o">.</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">classification</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">signals</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="mi">8</span><span class="w"> </span><span class="n">ISignalDetector</span><span class="w"> </span><span class="n">implementations</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MATH_COMMANDS</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                        </span><span class="p">(</span><span class="mi">251</span><span class="w"> </span><span class="n">vetted</span><span class="w"> </span><span class="n">KaTeX</span><span class="w"> </span><span class="n">commands</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">math_intent_classifier</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="n">Composes</span><span class="w"> </span><span class="n">detectors</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">score</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">flags</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">family_resolver</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="n">field_path</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">source</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="n">prior</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                            </span><span class="p">(</span><span class="n">rubric_criterion</span><span class="p">:</span><span class="w"> </span><span class="mf">0.85</span><span class="p">,</span><span class="w"> </span><span class="n">ai_solution</span><span class="p">:</span><span class="w"> </span><span class="mf">0.25</span><span class="p">,</span><span class="w"> </span><span class="o">...</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">repair</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">tier1_repairs</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="n">NfcNormalizer</span><span class="p">,</span><span class="w"> </span><span class="n">DiacriticStripper</span><span class="p">,</span><span class="w"> </span><span class="n">LiteralEscapeRepairer</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">tier2_repairs</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="n">MathOnlyWrapper</span><span class="p">,</span><span class="w"> </span><span class="n">OrphanBackslashRepairer</span><span class="p">,</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                            </span><span class="n">FillBlankInTextRepairer</span><span class="p">,</span><span class="w"> </span><span class="n">MissingFracPrefixRepairer</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">validation</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">validators</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="n">NonEmpty</span><span class="p">,</span><span class="w"> </span><span class="n">MaxLength</span><span class="p">,</span><span class="w"> </span><span class="n">BraceBalance</span><span class="p">,</span><span class="w"> </span><span class="n">SubscriptRun</span><span class="p">,</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                            </span><span class="n">ForbiddenCommand</span><span class="p">,</span><span class="w"> </span><span class="n">CompositeValidator</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">buckets</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">bucket_labeler</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="n">Maps</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">bucket</span><span class="w"> </span><span class="n">codes</span><span class="w"> </span><span class="n">A</span><span class="o">..</span><span class="n">L</span><span class="p">,</span><span class="w"> </span><span class="n">Z</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">fallback</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">html_fallback</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="n">HtmlFallbackRenderer</span><span class="w"> </span><span class="p">(</span><span class="n">HTML</span><span class="o">-</span><span class="n">escape</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="n">span</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">diagnostics</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">error_analyzer</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="n">Pre</span><span class="o">-</span><span class="n">parse</span><span class="w"> </span><span class="s2">&quot;missing character&quot;</span><span class="w"> </span><span class="n">pinpointer</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                            </span><span class="p">(</span><span class="n">with</span><span class="w"> </span><span class="n">caret</span><span class="w"> </span><span class="n">marker</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">snippet</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">pipeline</span><span class="o">/</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="n">pipeline</span><span class="o">.</span><span class="n">py</span><span class="w">          </span><span class="n">Pipeline</span><span class="o">.</span><span class="n">run</span><span class="p">()</span><span class="w"> </span><span class="n">orchestrator</span>
+<span class="err">│</span><span class="w">       </span><span class="err">│</span><span class="w">                        </span><span class="err">├─</span><span class="w"> </span><span class="n">HTML</span><span class="o">-</span><span class="n">aware</span><span class="w"> </span><span class="n">path</span>
+<span class="err">│</span><span class="w">       </span><span class="err">│</span><span class="w">                        </span><span class="err">├─</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">global</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">global</span>
+<span class="err">│</span><span class="w">       </span><span class="err">│</span><span class="w">                        </span><span class="err">├─</span><span class="w"> </span><span class="n">Segment</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">per</span><span class="o">-</span><span class="n">segment</span><span class="w"> </span><span class="n">process</span>
+<span class="err">│</span><span class="w">       </span><span class="err">│</span><span class="w">                        </span><span class="err">├─</span><span class="w"> </span><span class="n">Per</span><span class="o">-</span><span class="n">segment</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">validate</span>
+<span class="err">│</span><span class="w">       </span><span class="err">│</span><span class="w">                        </span><span class="err">└─</span><span class="w"> </span><span class="n">Bucket</span><span class="w"> </span><span class="n">label</span>
+<span class="err">│</span><span class="w">       </span><span class="err">└──</span><span class="w"> </span><span class="n">builder</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="n">PipelineBuilder</span><span class="w"> </span><span class="n">fluent</span><span class="w"> </span><span class="n">DI</span><span class="w"> </span><span class="n">builder</span>
+<span class="err">│</span><span class="w">                                </span><span class="o">+</span><span class="w"> </span><span class="n">build_default_pipeline</span><span class="p">()</span><span class="w"> </span><span class="n">factory</span>
+<span class="err">│</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">app</span><span class="o">/</span><span class="w">                         </span><span class="n">CLIs</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">autoheal</span><span class="o">.</span><span class="n">py</span><span class="w">              </span><span class="n">Heal</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">single</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="p">(</span><span class="o">--</span><span class="n">diagnose</span><span class="p">,</span><span class="w"> </span><span class="o">--</span><span class="n">interactive</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">run_pipeline</span><span class="o">.</span><span class="n">py</span><span class="w">          </span><span class="n">Heal</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">CSV</span><span class="o">/</span><span class="n">JSONL</span><span class="w"> </span><span class="n">dataset</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">build_inspector</span><span class="o">.</span><span class="n">py</span><span class="w">       </span><span class="n">Generate</span><span class="w"> </span><span class="n">data</span><span class="o">.</span><span class="n">json</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">observability</span><span class="w"> </span><span class="n">UI</span>
+<span class="err">│</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">web</span><span class="o">/</span><span class="w">                         </span><span class="n">Browser</span><span class="o">-</span><span class="n">side</span><span class="w"> </span><span class="n">assets</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">renderer</span><span class="o">.</span><span class="n">js</span><span class="w">              </span><span class="n">JS</span><span class="w"> </span><span class="n">port</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">pipeline</span><span class="w"> </span><span class="p">(</span><span class="n">matches</span><span class="w"> </span><span class="n">Python</span><span class="w"> </span><span class="n">output</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">playground</span><span class="o">.</span><span class="n">html</span><span class="w">          </span><span class="n">Live</span><span class="w"> </span><span class="n">editor</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">KaTeX</span><span class="w"> </span><span class="n">render</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">inspector</span><span class="o">/</span><span class="w">               </span><span class="n">Observability</span><span class="w"> </span><span class="n">UI</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="n">index</span><span class="o">.</span><span class="n">html</span><span class="w">           </span><span class="n">Dashboard</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">filters</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="n">cards</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="n">styles</span><span class="o">.</span><span class="n">css</span><span class="w">           </span><span class="n">UI</span><span class="w"> </span><span class="n">styling</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="n">app</span><span class="o">.</span><span class="n">js</span><span class="w">               </span><span class="n">Interactivity</span><span class="w"> </span><span class="p">(</span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">filters</span><span class="p">,</span><span class="w"> </span><span class="n">expand</span><span class="p">,</span><span class="w"> </span><span class="n">live</span><span class="w"> </span><span class="n">heal</span><span class="p">)</span>
+<span class="err">│</span><span class="w">       </span><span class="err">└──</span><span class="w"> </span><span class="n">data</span><span class="o">.</span><span class="n">json</span><span class="w">            </span><span class="n">Generated</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">build_inspector</span><span class="o">.</span><span class="n">py</span>
+<span class="err">│</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">tests_solid</span><span class="o">/</span><span class="w">                 </span><span class="mi">60</span><span class="o">-</span><span class="n">test</span><span class="w"> </span><span class="n">SOLID</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="n">suite</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">test_correct_latex</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="mi">15</span><span class="w"> </span><span class="n">tests</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">valid</span><span class="w"> </span><span class="n">LaTeX</span><span class="w"> </span><span class="n">inputs</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">test_broken_latex</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="mi">21</span><span class="w"> </span><span class="n">tests</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">broken</span><span class="w"> </span><span class="n">inputs</span><span class="w"> </span><span class="p">(</span><span class="n">every</span><span class="w"> </span><span class="n">bucket</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">test_solid_principles</span><span class="o">.</span><span class="n">py</span><span class="w"> </span><span class="mi">12</span><span class="w"> </span><span class="n">tests</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">OCP</span><span class="o">/</span><span class="n">LSP</span><span class="o">/</span><span class="n">DIP</span><span class="w"> </span><span class="n">compliance</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">test_error_analyzer</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="mi">11</span><span class="w"> </span><span class="n">tests</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">pre</span><span class="o">-</span><span class="n">parse</span><span class="w"> </span><span class="n">diagnostic</span>
+<span class="err">│</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">tests</span><span class="o">/</span><span class="w">                       </span><span class="mi">28</span><span class="o">-</span><span class="n">test</span><span class="w"> </span><span class="n">back</span><span class="o">-</span><span class="n">compat</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="n">suite</span>
+<span class="err">│</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">docs</span><span class="o">/</span><span class="w">                        </span><span class="n">Reference</span><span class="w"> </span><span class="n">documentation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">KATEX_PARSE_ERRORS</span><span class="o">.</span><span class="n">md</span><span class="w">    </span><span class="n">Full</span><span class="w"> </span><span class="n">catalog</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="mi">75</span><span class="w"> </span><span class="n">KaTeX</span><span class="w"> </span><span class="n">ParseError</span><span class="w"> </span><span class="n">templates</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">katex_error_catalog</span><span class="o">.</span><span class="n">json</span><span class="w"> </span><span class="n">Machine</span><span class="o">-</span><span class="n">readable</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="n">catalog</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">katex_commands_missing</span><span class="o">.</span><span class="n">txt</span><span class="w">   </span><span class="n">KaTeX</span><span class="w"> </span><span class="n">commands</span><span class="w"> </span><span class="n">we</span><span class="w"> </span><span class="n">don</span><span class="s1">&#39;t track as math-intent</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">END_TO_END_WORKFLOW</span><span class="o">.</span><span class="n">md</span><span class="w">   </span><span class="n">This</span><span class="w"> </span><span class="n">document</span>
+<span class="err">│</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">out_solid</span><span class="o">/</span><span class="w">                   </span><span class="n">CLI</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="p">(</span><span class="n">per</span><span class="w"> </span><span class="n">dataset</span><span class="w"> </span><span class="n">slice</span><span class="p">)</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">all_candidates</span><span class="o">/</span><span class="w">          </span><span class="n">results</span><span class="o">.</span><span class="n">jsonl</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">report</span><span class="o">.</span><span class="n">md</span><span class="o">/</span><span class="n">json</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">full</span><span class="o">/</span><span class="w">                    </span><span class="p">(</span><span class="n">classified_candidates</span><span class="o">.</span><span class="n">jsonl</span><span class="p">)</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">confirmed_broken</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="o">...</span><span class="w"> </span><span class="n">etc</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">fallback_rows</span><span class="o">.</span><span class="n">jsonl</span><span class="w">      </span><span class="n">Per</span><span class="o">-</span><span class="n">row</span><span class="w"> </span><span class="n">fallback</span><span class="w"> </span><span class="n">inspection</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="w"> </span><span class="n">rows</span><span class="w"> </span><span class="n">now</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="6-end-to-end-examples-per-bucket">6. End-to-end examples per bucket</h2>
+<p>Each example shows the full lifecycle: <strong>raw input → buckets → repairs → prepared output → render outcome</strong>.</p>
+<h3 id="bucket-a-missing_delimiters">Bucket A — missing_delimiters</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">INPUT</span><span class="w">  </span><span class="err">:</span><span class="w"> </span><span class="err">\</span><span class="n">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">\</span><span class="n">beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="err">\</span><span class="n">frac</span><span class="err">{</span><span class="mi">1</span><span class="err">}{</span><span class="mi">6</span><span class="err">}</span>
+<span class="n">FAMILY</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">rubric_criterion</span><span class="w"> </span><span class="p">(</span><span class="k">prior</span><span class="w"> </span><span class="mf">0.85</span><span class="p">)</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">2</span><span class="err">:</span><span class="w"> </span><span class="n">MathOnlyWrapper</span><span class="w"> </span><span class="n">detects</span><span class="w"> </span><span class="n">math</span><span class="o">-</span><span class="k">only</span><span class="w"> </span><span class="n">content</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="err">\</span><span class="n">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">\</span><span class="n">beta</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">\</span><span class="n">frac</span>
+<span class="w">  </span><span class="err">✅</span><span class="w"> </span><span class="n">wrap_math_only</span><span class="w"> </span><span class="n">fires</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">3</span><span class="err">:</span><span class="w"> </span><span class="n">Segmenter</span><span class="w"> </span><span class="n">sees</span><span class="w"> </span><span class="err">$\</span><span class="n">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">\</span><span class="n">beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="err">\</span><span class="n">frac</span><span class="err">{</span><span class="mi">1</span><span class="err">}{</span><span class="mi">6</span><span class="err">}$</span><span class="p">,</span><span class="w"> </span><span class="n">emits</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">math_inline</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">4</span><span class="err">:</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">classifier</span><span class="w"> </span><span class="p">(</span><span class="n">score</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="n">math</span><span class="p">)</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">5</span><span class="err">:</span><span class="w"> </span><span class="n">Validator</span><span class="w"> </span><span class="n">OK</span>
+<span class="nl">BUCKETS</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">A</span><span class="o">]</span>
+<span class="k">OUTPUT</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="err">$\</span><span class="n">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">\</span><span class="n">beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="err">\</span><span class="n">frac</span><span class="err">{</span><span class="mi">1</span><span class="err">}{</span><span class="mi">6</span><span class="err">}$</span><span class="w">   </span><span class="err">←</span><span class="w"> </span><span class="n">KaTeX</span><span class="w"> </span><span class="n">renders</span><span class="w"> </span><span class="n">α</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">β</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">⅙</span>
+</code></pre></div>
+
+<h3 id="bucket-b-broken_braces-auto-recovered-via-case-4-fix">Bucket B — broken_braces (auto-recovered via Case 4 fix)</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">INPUT</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="mi">2</span><span class="o">(</span><span class="mi">2</span><span class="o">)\</span><span class="n">sqrt</span><span class="o">{</span><span class="mi">3</span><span class="o">}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="o">}{</span><span class="mi">2</span><span class="o">+\</span><span class="n">sqrt</span><span class="o">{</span><span class="mi">3</span><span class="o">}}</span>
+<span class="n">FAMILY</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">feedback</span><span class="w"> </span><span class="o">(</span><span class="n">prior</span><span class="w"> </span><span class="mf">0.25</span><span class="o">)</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">3</span><span class="o">:</span><span class="w"> </span><span class="n">Segmenter</span><span class="w"> </span><span class="n">sees</span><span class="w"> </span><span class="n">raw</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">(</span><span class="n">no</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="n">delim</span><span class="o">)</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">but</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">detects</span><span class="w"> </span><span class="n">pattern</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">4</span><span class="o">:</span><span class="w"> </span><span class="n">MissingFracPrefixRepairer</span><span class="w"> </span><span class="n">sees</span><span class="w"> </span><span class="n">X</span><span class="o">}{</span><span class="n">Y</span><span class="o">}</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">extra</span><span class="w"> </span><span class="o">}</span>
+<span class="w">  </span><span class="err">✅</span><span class="w"> </span><span class="n">repair_missing_frac_prefix</span><span class="w"> </span><span class="n">fires</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">wraps</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">\</span><span class="n">frac</span><span class="o">{</span><span class="n">X</span><span class="o">}{</span><span class="n">Y</span><span class="o">}</span>
+<span class="n">BUCKETS</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="n">B</span><span class="o">,</span><span class="w"> </span><span class="n">D</span><span class="o">]</span>
+<span class="n">OUTPUT</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">$</span><span class="o">\</span><span class="n">frac</span><span class="o">{</span><span class="mi">2</span><span class="o">(</span><span class="mi">2</span><span class="o">)\</span><span class="n">sqrt</span><span class="o">{</span><span class="mi">3</span><span class="o">}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="o">}{</span><span class="mi">2</span><span class="o">+\</span><span class="n">sqrt</span><span class="o">{</span><span class="mi">3</span><span class="o">}}</span><span class="n">$</span>
+</code></pre></div>
+
+<h3 id="bucket-c-unbalanced_dollar">Bucket C — unbalanced_dollar</h3>
+<div class="codehilite"><pre><span></span><code><span class="nv">INPUT</span><span class="w">  </span><span class="o">:</span><span class="w"> </span>\<span class="nv">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nv">eta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span>\<span class="nv">frac</span><span class="p">{</span><span class="mi">1</span><span class="p">}{</span><span class="mi">6</span><span class="p">}$</span><span class="w">       </span>←<span class="w"> </span><span class="ow">or</span><span class="nv">phan</span><span class="w"> </span><span class="nv">trailing</span><span class="w"> </span><span class="p">$</span>
+<span class="nv">FAMILY</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="nv">rubric_criterion</span>
+<span class="nv">STAGE</span><span class="w"> </span><span class="mi">2</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="nv">unescaped</span><span class="w"> </span><span class="p">$,</span><span class="w"> </span><span class="ow">or</span><span class="nv">phan</span><span class="w"> </span><span class="nv">at</span><span class="w"> </span><span class="nv">end</span><span class="w"> </span><span class="nv">of</span><span class="w"> </span><span class="nv">math</span><span class="o">-</span><span class="nv">shaped</span><span class="w"> </span><span class="nv">content</span>
+<span class="w">  </span>✅<span class="w"> </span><span class="nv">wrap_math_only_strip_orphan_dollar</span><span class="w"> </span>→<span class="w"> </span><span class="nv">strips</span><span class="p">,</span><span class="w"> </span><span class="nv">wraps</span>
+<span class="nv">STAGE</span><span class="w"> </span><span class="mi">5</span><span class="o">:</span><span class="w"> </span><span class="ow">or</span><span class="nv">phan</span><span class="o">-</span><span class="nv">eta</span><span class="w"> </span><span class="nv">repair</span><span class="w"> </span><span class="nv">fires</span><span class="w"> </span><span class="nv">inside</span><span class="w"> </span><span class="nv">math</span>
+<span class="w">  </span>✅<span class="w"> </span><span class="nv">repair_orphan_eta_to_beta</span>
+<span class="nv">BUCKETS</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nv">A</span><span class="p">,</span><span class="w"> </span><span class="nv">D</span><span class="p">]</span>
+<span class="nv">OUTPUT</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="p">$</span>\<span class="nv">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span>\<span class="nv">beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span>\<span class="nv">frac</span><span class="p">{</span><span class="mi">1</span><span class="p">}{</span><span class="mi">6</span><span class="p">}$</span>
+</code></pre></div>
+
+<h3 id="bucket-d-ocr_corruption-multiple-variants">Bucket D — ocr_corruption (multiple variants)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nv">INPUT</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="p">$</span>\<span class="nv">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nv">eta</span><span class="w"> </span><span class="o">+</span><span class="w"> </span>\<span class="nv">alpha</span>\<span class="nv">beta</span><span class="p">$</span>
+<span class="nv">STAGE</span><span class="w"> </span><span class="mi">5</span><span class="o">:</span><span class="w"> </span><span class="nv">OrphanBackslashRepairer</span><span class="w"> </span><span class="nv">detects</span><span class="w"> </span><span class="o">&#39;</span><span class="nv">eta</span><span class="o">&#39;</span><span class="w"> </span><span class="nv">adjacent</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="nv">math</span><span class="w"> </span><span class="nv">context</span>
+<span class="w">  </span>✅<span class="w"> </span><span class="nv">repair_orphan_eta_to_beta</span>
+<span class="nv">OUTPUT</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="p">$</span>\<span class="nv">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span>\<span class="nv">beta</span><span class="w"> </span><span class="o">+</span><span class="w"> </span>\<span class="nv">alpha</span>\<span class="nv">beta</span><span class="p">$</span>
+
+<span class="nv">INPUT</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="p">$</span>\<span class="nv">frac</span><span class="p">{</span><span class="mi">1</span><span class="p">}{</span><span class="mi">3</span><span class="p">}</span><span class="w"> </span>\<span class="nv">times</span><span class="w"> </span><span class="nv">rac</span><span class="p">{</span><span class="mi">2</span><span class="p">}{</span><span class="mi">5</span><span class="p">}$</span>
+<span class="w">  </span>✅<span class="w"> </span><span class="nv">repair_orphan_rac</span>
+<span class="nv">OUTPUT</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="p">$</span>\<span class="nv">frac</span><span class="p">{</span><span class="mi">1</span><span class="p">}{</span><span class="mi">3</span><span class="p">}</span><span class="w"> </span>\<span class="nv">times</span><span class="w"> </span>\<span class="nv">frac</span><span class="p">{</span><span class="mi">2</span><span class="p">}{</span><span class="mi">5</span><span class="p">}$</span>
+
+<span class="nv">INPUT</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="p">$</span>\<span class="nv">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nv">alphaeta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">$</span>
+<span class="w">  </span>✅<span class="w"> </span><span class="nv">repair_alphaeta</span>
+<span class="nv">OUTPUT</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="p">$</span>\<span class="nv">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span>\<span class="nv">alpha</span>\<span class="nv">beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">$</span>
+
+<span class="nv">INPUT</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="p">$</span>\<span class="nv">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span>\<span class="nv">beta</span><span class="w"> </span><span class="o">+</span><span class="w"> </span>̑\<span class="nv">alpha</span>\<span class="nv">beta</span><span class="p">$</span><span class="w">    </span><span class="p">(</span><span class="nv">with</span><span class="w"> </span><span class="nv">U</span><span class="o">+</span><span class="mi">0311</span><span class="p">)</span>
+<span class="w">  </span>✅<span class="w"> </span><span class="nv">strip_combining_diacritics</span>
+<span class="nv">OUTPUT</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="p">$</span>\<span class="nv">alpha</span><span class="w"> </span><span class="o">+</span><span class="w"> </span>\<span class="nv">beta</span><span class="w"> </span><span class="o">+</span><span class="w"> </span>\<span class="nv">alpha</span>\<span class="nv">beta</span><span class="p">$</span>
+</code></pre></div>
+
+<h3 id="bucket-e-invalid_command_name-security">Bucket E — invalid_command_name (security)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">INPUT</span><span class="w">  </span><span class="err">:</span><span class="w"> </span><span class="err">$\</span><span class="k">input</span><span class="err">{</span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">passwd</span><span class="err">}$</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">5</span><span class="err">:</span><span class="w"> </span><span class="n">ForbiddenCommandValidator</span><span class="w"> </span><span class="n">blocks</span>
+<span class="nl">BUCKETS</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">E</span><span class="o">]</span>
+<span class="k">OUTPUT</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="o">&lt;</span><span class="n">span</span><span class="w"> </span><span class="k">class</span><span class="o">=</span><span class="ss">&quot;latex-fallback&quot;</span><span class="w"> </span><span class="k">data</span><span class="o">-</span><span class="n">render</span><span class="o">-</span><span class="n">reason</span><span class="o">=</span><span class="ss">&quot;forbidden_command:input&quot;</span><span class="o">&gt;</span>
+<span class="w">         </span><span class="err">$\</span><span class="k">input</span><span class="err">{</span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">passwd</span><span class="err">}$</span><span class="o">&lt;/</span><span class="n">span</span><span class="o">&gt;</span>
+<span class="w">         </span><span class="p">(</span><span class="n">rendered</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">escaped</span><span class="w"> </span><span class="nc">text</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">never</span><span class="w"> </span><span class="n">executed</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="bucket-f-unsupported_environment-html-aware-path">Bucket F — unsupported_environment (HTML-aware path)</h3>
+<div class="codehilite"><pre><span></span><code>INPUT<span class="w">  </span>:<span class="w"> </span>Find<span class="w"> </span>the<span class="w"> </span>data:<span class="w"> </span><span class="nt">&lt;table&gt;&lt;tr&gt;&lt;td&gt;</span>$x^2$<span class="nt">&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</span><span class="w"> </span>when<span class="w"> </span>$y<span class="w"> </span>&gt;<span class="w"> </span>0$
+ROUTE<span class="w">  </span>:<span class="w"> </span>_run_html_aware<span class="w"> </span>(HTML<span class="w"> </span>detected)
+SPLIT<span class="w">  </span>:<span class="w"> </span>prose:&quot;Find<span class="w"> </span>the<span class="w"> </span>data:<span class="w"> </span>&quot;
+<span class="w">         </span>html<span class="w"> </span>:&quot;<span class="nt">&lt;table&gt;</span>&quot;,<span class="w"> </span>&quot;<span class="nt">&lt;tr&gt;</span>&quot;,<span class="w"> </span>&quot;<span class="nt">&lt;td&gt;</span>&quot;
+<span class="w">         </span>math<span class="w"> </span>:&quot;$x^2$&quot;<span class="w">  </span>←<span class="w"> </span>still<span class="w"> </span>renders!
+<span class="w">         </span>html<span class="w"> </span>:&quot;<span class="nt">&lt;/td&gt;</span>&quot;,<span class="w"> </span>&quot;<span class="nt">&lt;/tr&gt;</span>&quot;,<span class="w"> </span>&quot;<span class="nt">&lt;/table&gt;</span>&quot;
+<span class="w">         </span>prose:&quot;<span class="w"> </span>when<span class="w"> </span>&quot;
+<span class="w">         </span>math<span class="w"> </span>:&quot;$y<span class="w"> </span>&gt;<span class="w"> </span>0$&quot;<span class="w">  </span>←<span class="w"> </span>still<span class="w"> </span>renders!
+BUCKETS:<span class="w"> </span>[F,<span class="w"> </span>G]
+OUTPUT<span class="w"> </span>:<span class="w"> </span>Find<span class="w"> </span>the<span class="w"> </span>data:<span class="w"> </span><span class="nt">&lt;table&gt;&lt;tr&gt;&lt;td&gt;&lt;span</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;latex-math&quot;</span><span class="nt">&gt;</span>$x^2$<span class="nt">&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</span>
+<span class="w">         </span>when<span class="w"> </span><span class="nt">&lt;span</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;latex-math&quot;</span><span class="nt">&gt;</span>$y<span class="w"> </span>&gt;<span class="w"> </span>0$<span class="nt">&lt;/span&gt;</span>
+<span class="w">         </span>(browser<span class="w"> </span>renders<span class="w"> </span>the<span class="w"> </span>real<span class="w"> </span><span class="nt">&lt;table&gt;</span>;<span class="w"> </span>KaTeX<span class="w"> </span>renders<span class="w"> </span>both<span class="w"> </span>math<span class="w"> </span>spans)
+</code></pre></div>
+
+<h3 id="bucket-g-mixed_prose_math-control-clean">Bucket G — mixed_prose_math (control / clean)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">INPUT</span><span class="w">  </span><span class="err">:</span><span class="w"> </span><span class="k">If</span><span class="w"> </span><span class="err">$\</span><span class="n">alpha</span><span class="err">$</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="err">$\</span><span class="n">beta</span><span class="err">$</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">zeroes</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="err">$</span><span class="n">x</span><span class="o">^</span><span class="mi">2</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="err">$</span><span class="p">,</span><span class="w"> </span><span class="n">find</span><span class="w"> </span><span class="err">$\</span><span class="n">alpha</span><span class="o">+</span><span class="err">\</span><span class="n">beta</span><span class="err">$</span><span class="p">.</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">3</span><span class="err">:</span><span class="w"> </span><span class="n">Segmenter</span><span class="w"> </span><span class="n">produces</span><span class="w"> </span><span class="mi">9</span><span class="w"> </span><span class="n">segments</span><span class="w"> </span><span class="n">alternating</span><span class="w"> </span><span class="nc">text</span><span class="o">/</span><span class="n">math</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">5</span><span class="err">:</span><span class="w"> </span><span class="ow">All</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="n">segments</span><span class="w"> </span><span class="n">validate</span><span class="w"> </span><span class="n">OK</span>
+<span class="nl">BUCKETS</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">G</span><span class="o">]</span>
+<span class="k">OUTPUT</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="n">unchanged</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">exactly</span><span class="w"> </span><span class="n">matches</span><span class="w"> </span><span class="k">input</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="bucket-h-false_positive-fill-in-the-blank-fix">Bucket H — false_positive (fill-in-the-blank fix)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">INPUT</span><span class="w">  </span><span class="err">:</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">\</span><span class="nc">text</span><span class="err">{</span><span class="n">_______</span><span class="err">}</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">5</span><span class="err">:</span><span class="w"> </span><span class="n">SubscriptRunValidator</span><span class="w"> </span><span class="n">triggers</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">_</span><span class="err">{</span><span class="mi">3</span><span class="p">,</span><span class="err">}</span><span class="w"> </span><span class="n">but</span>
+<span class="w">         </span><span class="n">FillBlankInTextRepairer</span><span class="w"> </span><span class="n">rewrites</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">_____</span><span class="w"> </span><span class="k">first</span>
+<span class="w">  </span><span class="err">✅</span><span class="w"> </span><span class="n">repair_fill_blank_in_text</span>
+<span class="k">OUTPUT</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="err">$</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">\</span><span class="nc">text</span><span class="err">{\</span><span class="k">rule</span><span class="err">{</span><span class="mi">6</span><span class="n">em</span><span class="err">}{</span><span class="mf">0.4</span><span class="n">pt</span><span class="err">}}$</span><span class="w">  </span><span class="err">←</span><span class="w"> </span><span class="n">KaTeX</span><span class="w"> </span><span class="n">renders</span><span class="w"> </span><span class="n">horizontal</span><span class="w"> </span><span class="n">line</span>
+
+<span class="p">(</span><span class="nl">Also</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;The most electronegative element is ______&quot;</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">pipeline</span><span class="w"> </span><span class="n">leaves</span><span class="w"> </span><span class="n">alone</span><span class="p">,</span>
+<span class="w"> </span><span class="n">_____</span><span class="w"> </span><span class="n">stays</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">plain</span><span class="w"> </span><span class="nc">text</span><span class="p">,</span><span class="w"> </span><span class="n">never</span><span class="w"> </span><span class="n">enters</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="n">mode</span><span class="p">)</span>
+<span class="nl">BUCKETS</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">H</span><span class="o">]</span>
+</code></pre></div>
+
+<h3 id="bucket-i-code_snippet">Bucket I — code_snippet</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">INPUT</span><span class="w">  </span><span class="err">:</span><span class="w"> </span><span class="k">Use</span><span class="w"> </span><span class="err">`</span><span class="n">npm</span><span class="w"> </span><span class="n">install</span><span class="err">`</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">install</span><span class="p">.</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">4</span><span class="err">:</span><span class="w"> </span><span class="n">classifier</span><span class="w"> </span><span class="n">sees</span><span class="w"> </span><span class="n">backticks</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">routes</span><span class="w"> </span><span class="n">through</span><span class="w"> </span><span class="nc">text</span>
+<span class="nl">BUCKETS</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">G, I</span><span class="o">]</span>
+<span class="k">OUTPUT</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="n">unchanged</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">rendered</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">plain</span><span class="w"> </span><span class="nc">text</span><span class="p">,</span><span class="w"> </span><span class="k">no</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="n">parsing</span><span class="w"> </span><span class="n">attempted</span><span class="p">)</span>
+
+<span class="k">INPUT</span><span class="w">  </span><span class="err">:</span><span class="w"> </span><span class="err">```</span><span class="n">python</span><span class="err">\</span><span class="n">nprint</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="err">\</span><span class="n">n</span><span class="err">```</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">0</span><span class="err">:</span><span class="w"> </span><span class="n">Triple</span><span class="o">-</span><span class="n">backtick</span><span class="w"> </span><span class="n">fence</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">never</span><span class="w"> </span><span class="n">enters</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="n">pipeline</span>
+<span class="nl">BUCKETS</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">I</span><span class="o">]</span>
+<span class="k">OUTPUT</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">Code</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="n">intact</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">downstream</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="n">highlighter</span>
+</code></pre></div>
+
+<h3 id="bucket-j-currency_text">Bucket J — currency_text</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">INPUT</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="n">The</span><span class="w"> </span><span class="n">book</span><span class="w"> </span><span class="n">costs</span><span class="w"> </span><span class="n">$5</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">pen</span><span class="w"> </span><span class="n">costs</span><span class="w"> </span><span class="n">$3</span><span class="o">.</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">3</span><span class="o">:</span><span class="w"> </span><span class="n">Two</span><span class="w"> </span><span class="n">$</span><span class="w"> </span><span class="n">characters</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">segmenter</span><span class="w"> </span><span class="n">creates</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="n">segment</span><span class="w"> </span><span class="s2">&quot;5 and the pen costs &quot;</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">4</span><span class="o">:</span><span class="w"> </span><span class="n">CurrencySignal</span><span class="w"> </span><span class="n">triggers</span><span class="w"> </span><span class="o">(</span><span class="n">looks</span><span class="w"> </span><span class="n">like</span><span class="w"> </span><span class="n">prose</span><span class="o">-</span><span class="k">with</span><span class="o">-</span><span class="n">dollars</span><span class="o">,</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="n">command</span><span class="o">)</span>
+<span class="w">         </span><span class="n">confidence</span><span class="w"> </span><span class="n">drops</span><span class="w"> </span><span class="n">below</span><span class="w"> </span><span class="n">threshold</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">5</span><span class="o">:</span><span class="w"> </span><span class="n">Segment</span><span class="w"> </span><span class="n">demoted</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">text</span>
+<span class="n">BUCKETS</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="n">G</span><span class="o">,</span><span class="w"> </span><span class="n">J</span><span class="o">]</span>
+<span class="n">OUTPUT</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="o">(</span><span class="n">unchanged</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">KaTeX</span><span class="w"> </span><span class="n">never</span><span class="w"> </span><span class="n">sees</span><span class="w"> </span><span class="k">this</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">math</span><span class="o">)</span>
+</code></pre></div>
+
+<h3 id="bucket-k-nested_parser_corruption">Bucket K — nested_parser_corruption</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">INPUT</span><span class="w">  </span><span class="err">:</span><span class="w"> </span><span class="err">$\</span><span class="n">frac</span><span class="err">{</span><span class="mi">1</span><span class="err">}{\</span><span class="nc">text</span><span class="err">{\</span><span class="nf">sqrt</span><span class="err">{</span><span class="mi">3</span><span class="err">}}}$</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">5</span><span class="err">:</span><span class="w"> </span><span class="n">Validator</span><span class="w"> </span><span class="n">OK</span><span class="w"> </span><span class="p">(</span><span class="n">braces</span><span class="w"> </span><span class="n">balanced</span><span class="p">)</span>
+<span class="w">         </span><span class="n">KaTeX</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="nl">strict</span><span class="p">:</span><span class="s1">&#39;ignore&#39;</span><span class="w"> </span><span class="n">renders</span><span class="w"> </span><span class="n">best</span><span class="o">-</span><span class="n">effort</span>
+<span class="nl">BUCKETS</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">K</span><span class="o">]</span>
+<span class="k">OUTPUT</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="err">$\</span><span class="n">frac</span><span class="err">{</span><span class="mi">1</span><span class="err">}{\</span><span class="nc">text</span><span class="err">{\</span><span class="nf">sqrt</span><span class="err">{</span><span class="mi">3</span><span class="err">}}}$</span>
+<span class="w">         </span><span class="p">(</span><span class="n">KaTeX</span><span class="w"> </span><span class="n">produces</span><span class="w"> </span><span class="ow">some</span><span class="w"> </span><span class="n">visual</span><span class="w"> </span><span class="k">output</span><span class="p">;</span><span class="w"> </span><span class="n">strict</span><span class="o">-</span><span class="n">mode</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="n">would</span><span class="w"> </span><span class="n">see</span><span class="w"> </span><span class="n">warning</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="bucket-l-multiline_ai_solution">Bucket L — multiline_ai_solution</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">INPUT</span><span class="w">  </span><span class="err">:</span><span class="w"> </span><span class="n">Step</span><span class="w"> </span><span class="mi">1</span><span class="err">:</span><span class="w"> </span><span class="n">solve</span><span class="p">.</span><span class="err">\</span><span class="n">nStep</span><span class="w"> </span><span class="mi">2</span><span class="err">:</span><span class="w"> </span><span class="n">verify</span><span class="p">.</span><span class="w">   </span><span class="err">←</span><span class="w"> </span><span class="n">literal</span><span class="w"> </span><span class="err">\</span><span class="n">n</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">JSON</span>
+<span class="n">FAMILY</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">ai_solution</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">1</span><span class="err">:</span><span class="w"> </span><span class="n">LiteralEscapeRepairer</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">prose</span>
+<span class="w">  </span><span class="err">✅</span><span class="w"> </span><span class="n">literal_escape_to_whitespace</span>
+<span class="k">OUTPUT</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">Step</span><span class="w"> </span><span class="mi">1</span><span class="err">:</span><span class="w"> </span><span class="n">solve</span><span class="p">.</span><span class="o">&lt;</span><span class="n">actual</span><span class="w"> </span><span class="n">newline</span><span class="o">&gt;</span><span class="n">Step</span><span class="w"> </span><span class="mi">2</span><span class="err">:</span><span class="w"> </span><span class="n">verify</span><span class="p">.</span>
+<span class="nl">BUCKETS</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">L</span><span class="o">]</span>
+</code></pre></div>
+
+<h3 id="bucket-z-clean">Bucket Z — clean</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">INPUT</span><span class="w">  </span><span class="err">:</span><span class="w"> </span><span class="err">$\</span><span class="n">frac</span><span class="err">{</span><span class="mi">1</span><span class="err">}{</span><span class="mi">2</span><span class="err">}</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">\</span><span class="n">alpha</span><span class="err">$</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">3</span><span class="err">:</span><span class="w"> </span><span class="n">Segmenter</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="n">segment</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">4</span><span class="err">:</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">math</span><span class="w"> </span><span class="k">no</span><span class="o">-</span><span class="n">op</span><span class="p">,</span><span class="w"> </span><span class="n">Tier</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">triggered</span><span class="w"> </span><span class="p">(</span><span class="k">no</span><span class="w"> </span><span class="n">corruption</span><span class="p">)</span>
+<span class="n">STAGE</span><span class="w"> </span><span class="mi">5</span><span class="err">:</span><span class="w"> </span><span class="n">Validator</span><span class="w"> </span><span class="n">OK</span>
+<span class="nl">BUCKETS</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">Z</span><span class="o">]</span>
+<span class="k">OUTPUT</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="p">(</span><span class="n">unchanged</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">already</span><span class="w"> </span><span class="n">correct</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="7-solid-compliance-verified-by-tests">7. SOLID compliance — verified by tests</h2>
+<p>The architecture is mechanically verified to satisfy SOLID principles
+(<code>tests_solid/test_solid_principles.py</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Principle</th>
+<th>How enforced</th>
+<th>Verified by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S — Single Responsibility</strong></td>
+<td>Each class implements one interface; segmenters segment, validators validate, signals detect</td>
+<td><code>TestSingleResponsibility</code></td>
+</tr>
+<tr>
+<td><strong>O — Open/Closed</strong></td>
+<td>Adding a repairer/signal/validator extends behavior via the builder, no edits to existing code</td>
+<td><code>TestOpenClosed</code> — adds emoji-stripper at runtime</td>
+</tr>
+<tr>
+<td><strong>L — Liskov Substitution</strong></td>
+<td>Any class implementing the protocol is a valid drop-in</td>
+<td><code>TestLiskovSubstitution</code> — substitutes <code>StubSegmenter</code></td>
+</tr>
+<tr>
+<td><strong>I — Interface Segregation</strong></td>
+<td>Every <code>I*</code> interface defines one method</td>
+<td><code>TestInterfaceSegregation</code></td>
+</tr>
+<tr>
+<td><strong>D — Dependency Inversion</strong></td>
+<td>Pipeline orchestrator imports only from <code>core</code></td>
+<td><code>TestDependencyInversion</code> — greps <code>pipeline.py</code> source</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-cli-surface">8. CLI surface</h2>
+<div class="codehilite"><pre><span></span><code><span class="c"># Heal a single string</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">app</span><span class="p">.</span><span class="n">autoheal</span> <span class="s2">&quot;\alpha + eta = -\frac{1}{6}</span><span class="se">`$</span><span class="s2">&quot;</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">app</span><span class="p">.</span><span class="n">autoheal</span> <span class="p">-</span><span class="n">-diagnose</span> <span class="s2">&quot;&lt;broken latex&gt;&quot;</span>      <span class="c"># show error positions</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">app</span><span class="p">.</span><span class="n">autoheal</span> <span class="p">-</span><span class="n">-interactive</span>                     <span class="c"># REPL</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">app</span><span class="p">.</span><span class="n">autoheal</span> <span class="p">-</span><span class="n">-quiet</span> <span class="s2">&quot;...&quot;</span>                     <span class="c"># pipe-able</span>
+
+<span class="c"># Heal a dataset</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">app</span><span class="p">.</span><span class="n">run_pipeline</span> <span class="p">-</span><span class="n">-input</span> <span class="n">file</span><span class="p">.</span><span class="n">csv</span> <span class="p">-</span><span class="n">-outdir</span> <span class="n">out</span><span class="p">/</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">app</span><span class="p">.</span><span class="n">run_pipeline</span> <span class="p">-</span><span class="n">-input</span> <span class="n">file</span><span class="p">.</span><span class="n">jsonl</span> <span class="p">-</span><span class="n">-outdir</span> <span class="n">out</span><span class="p">/</span> <span class="p">-</span><span class="n">-limit</span> <span class="n">1000</span>
+
+<span class="c"># Build inspector data</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">app</span><span class="p">.</span><span class="n">build_inspector</span> <span class="p">-</span><span class="n">-input</span> <span class="n">file</span><span class="p">.</span><span class="n">jsonl</span> <span class="p">-</span><span class="n">-per-stratum</span> <span class="n">40</span> <span class="p">-</span><span class="n">-max-rows</span> <span class="n">1500</span>
+
+<span class="c"># Serve inspector</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">http</span><span class="p">.</span><span class="n">server</span> <span class="n">8765</span>
+<span class="nb">start </span><span class="n">http</span><span class="p">://</span><span class="n">127</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">1</span><span class="p">:</span><span class="n">8765</span><span class="p">/</span><span class="n">web</span><span class="p">/</span><span class="n">inspector</span><span class="p">/</span><span class="n">index</span><span class="p">.</span><span class="n">html</span>
+
+<span class="c"># Tests</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">unittest</span> <span class="n">tests_solid</span><span class="p">.</span><span class="n">test_correct_latex</span> <span class="n">tests_solid</span><span class="p">.</span><span class="n">test_broken_latex</span> <span class="n">tests_solid</span><span class="p">.</span><span class="n">test_solid_principles</span> <span class="n">tests_solid</span><span class="p">.</span><span class="n">test_error_analyzer</span>
+<span class="n">python</span> <span class="n">-m</span> <span class="n">unittest</span> <span class="n">tests</span><span class="p">.</span><span class="n">test_pipeline</span>
+<span class="n">python</span> <span class="n">_e2e_autoheal</span><span class="p">.</span><span class="n">py</span>
+<span class="n">python</span> <span class="n">_e2e_idempotence</span><span class="p">.</span><span class="n">py</span>
+<span class="n">python</span> <span class="n">_validate_synth</span><span class="p">.</span><span class="n">py</span>
+<span class="n">node</span> <span class="n">_e2e_js</span><span class="p">.</span><span class="n">js</span>
+<span class="n">node</span> <span class="n">_e2e_user_input</span><span class="p">.</span><span class="n">js</span>
+</code></pre></div>
+
+<hr />
+<h2 id="9-production-shape-numbers-verified-end-to-end">9. Production-shape numbers (verified end-to-end)</h2>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th style="text-align: right;">Items</th>
+<th style="text-align: right;">Time</th>
+<th style="text-align: right;">Errors</th>
+<th style="text-align: right;">Fallback</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unit tests (SOLID)</td>
+<td style="text-align: right;">60</td>
+<td style="text-align: right;">&lt;0.01s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>Unit tests (original)</td>
+<td style="text-align: right;">28</td>
+<td style="text-align: right;">&lt;0.01s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>E2E autoheal cases</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">&lt;0.1s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>E2E JS port cases</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">&lt;1s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>Synthetic dataset</td>
+<td style="text-align: right;">1,010</td>
+<td style="text-align: right;">&lt;1s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td><code>golden_test_set.csv</code></td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">0.09s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td><code>confirmed_broken.csv</code></td>
+<td style="text-align: right;">1,500</td>
+<td style="text-align: right;">0.20s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td><code>confirmed_good.csv</code></td>
+<td style="text-align: right;">1,500</td>
+<td style="text-align: right;">0.34s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td><code>tricky_examples.csv</code></td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">0.04s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td><code>labeled_sample.csv</code></td>
+<td style="text-align: right;">1,746</td>
+<td style="text-align: right;">0.30s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td><code>classified_candidates.jsonl</code> (master)</td>
+<td style="text-align: right;">467,886</td>
+<td style="text-align: right;">53.6s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td><code>all_candidates.jsonl</code> (master)</td>
+<td style="text-align: right;">467,886</td>
+<td style="text-align: right;">53.1s</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td><strong>TOTAL</strong></td>
+<td style="text-align: right;"><strong>942,641</strong></td>
+<td style="text-align: right;">~109s</td>
+<td style="text-align: right;"><strong>0</strong></td>
+<td style="text-align: right;"><strong>0</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Idempotence verified on 5,000 random real rows (0 non-idempotent).</p>
+<hr />
+<h2 id="10-the-five-fixes-that-took-fallback-from-87-0">10. The five fixes that took fallback from 87 → 0</h2>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Description</th>
+<th>Fix mechanism</th>
+<th style="text-align: right;">Rows recovered</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>HTML in question body (e.g. <code>&lt;table&gt;</code>) was treated as fallback</td>
+<td>New <code>_run_html_aware</code> splits on tags, preserves HTML, renders math inside</td>
+<td style="text-align: right;">69</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Empty <code>$$</code> pairs from truncated AI prose</td>
+<td>Segmenter coalesces empty math segments back into text</td>
+<td style="text-align: right;">12</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>\text{_______}</code> fill-in-the-blank crashed KaTeX</td>
+<td><code>FillBlankInTextRepairer</code> rewrites to <code>\rule{Nem}{0.4pt}</code></td>
+<td style="text-align: right;">4</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Extra <code>}</code> indicating lost <code>\frac{</code> prefix</td>
+<td><code>MissingFracPrefixRepairer</code> rewrites <code>X}{Y}</code> as <code>\frac{X}{Y}</code></td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Math segment emptied by Tier 1 repair (<code>$̑$</code> etc.)</td>
+<td>Demote to TEXT containing original delimited form</td>
+<td style="text-align: right;">2</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td></td>
+<td></td>
+<td style="text-align: right;"><strong>87</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Net: every one of the 467,886 production rows now renders safely.</p>
+<hr />
+<p>This document is a complete reference for the implementation. For source-level
+specifics, jump to the file paths listed in Section 5.</p>
+<hr>
+<div class="footer-line">LaTeX Renderer Pipeline — End-to-End Implementation Reference</div>
+</body>
+</html>

@@ -1,0 +1,335 @@
+{
+  "total_call_sites": 87,
+  "distinct_templates": 75,
+  "source_file": "node_modules\\katex\\dist\\katex.mjs",
+  "categories": {
+    "Invalid value (size / color / character / mode)": [
+      {
+        "message": "Invalid unit: '",
+        "count": 3
+      },
+      {
+        "message": "Invalid size: '",
+        "count": 2
+      },
+      {
+        "message": "Invalid attribute name '",
+        "count": 1
+      },
+      {
+        "message": "Invalid token after macro prefix",
+        "count": 1
+      },
+      {
+        "message": "Invalid argument number \\\"",
+        "count": 1
+      },
+      {
+        "message": "Invalid delimiter '",
+        "count": 1
+      },
+      {
+        "message": "Invalid delimiter type '",
+        "count": 1
+      },
+      {
+        "message": "Invalid \\\\arraystretch: ",
+        "count": 1
+      },
+      {
+        "message": "Invalid separator type: ",
+        "count": 1
+      },
+      {
+        "message": "Invalid environment name",
+        "count": 1
+      },
+      {
+        "message": "Invalid key: '",
+        "count": 1
+      },
+      {
+        "message": "Invalid base-",
+        "count": 1
+      },
+      {
+        "message": "Invalid number of arguments: ",
+        "count": 1
+      },
+      {
+        "message": "Invalid ",
+        "count": 1
+      },
+      {
+        "message": "Invalid color: '",
+        "count": 1
+      }
+    ],
+    "Unexpected token / 'got X'": [
+      {
+        "message": "Got group of unknown type: '",
+        "count": 2
+      },
+      {
+        "message": "Got function '",
+        "count": 1
+      }
+    ],
+    "Missing-X": [
+      {
+        "message": "Missing a ",
+        "count": 2
+      }
+    ],
+    "Expected-X — parser awaited specific token": [
+      {
+        "message": "Expected a control sequence",
+        "count": 2
+      },
+      {
+        "message": "Expected \\\\\\\\ or \\\\cr or \\\\end",
+        "count": 1
+      },
+      {
+        "message": "Expected one of \\\"<>AV=|.\\\" after @",
+        "count": 1
+      },
+      {
+        "message": "Expected a macro definition",
+        "count": 1
+      },
+      {
+        "message": "Expected & or \\\\\\\\ or \\\\cr or \\\\end",
+        "count": 1
+      },
+      {
+        "message": "Expected l or c or r",
+        "count": 1
+      },
+      {
+        "message": "Expected '",
+        "count": 1
+      },
+      {
+        "message": "Expected group after '",
+        "count": 1
+      },
+      {
+        "message": "Expected group as ",
+        "count": 1
+      }
+    ],
+    "Other": [
+      {
+        "message": "Unknown column alignment: ",
+        "count": 2
+      },
+      {
+        "message": "{subarray} can contain only one column",
+        "count": 2
+      },
+      {
+        "message": "Unknown type of space \\\"",
+        "count": 2
+      },
+      {
+        "message": "LaTeX-incompatible input and strict mode is set to 'error': ",
+        "count": 1
+      },
+      {
+        "message": "{",
+        "count": 1
+      },
+      {
+        "message": "Too many math in a row: ",
+        "count": 1
+      },
+      {
+        "message": "Mismatched ",
+        "count": 1
+      },
+      {
+        "message": "Unbalanced namespace destruction: attempt ",
+        "count": 1
+      },
+      {
+        "message": "Extra }",
+        "count": 1
+      },
+      {
+        "message": "Use of the macro doesn't match its definition",
+        "count": 1
+      },
+      {
+        "message": "Too many expansions: infinite loop or ",
+        "count": 1
+      },
+      {
+        "message": "Incomplete placeholder at end of macro body",
+        "count": 1
+      },
+      {
+        "message": "only one infix operator per group",
+        "count": 1
+      },
+      {
+        "message": "Limit controls must follow a math operator",
+        "count": 1
+      },
+      {
+        "message": "No function handler for ",
+        "count": 1
+      },
+      {
+        "message": "Unknown group type as ",
+        "count": 1
+      },
+      {
+        "message": "Unknown accent ' ",
+        "count": 1
+      },
+      {
+        "message": "Accent ",
+        "count": 1
+      },
+      {
+        "message": "KaTeX doesn't work in quirks mode.",
+        "count": 1
+      }
+    ],
+    "Undefined control sequence — unknown \\command": [
+      {
+        "message": "Undefined control sequence: ",
+        "count": 2
+      }
+    ],
+    "Double / duplicate / repeated": [
+      {
+        "message": "Double superscript",
+        "count": 2
+      },
+      {
+        "message": "Double subscript",
+        "count": 1
+      }
+    ],
+    "Mode mismatch (math/text/display)": [
+      {
+        "message": "Can't use function '",
+        "count": 2
+      }
+    ],
+    "Lexical / character errors": [
+      {
+        "message": "Unsupported character: ",
+        "count": 1
+      },
+      {
+        "message": "Too many tab characters: &",
+        "count": 1
+      },
+      {
+        "message": "Unexpected character: '",
+        "count": 1
+      }
+    ],
+    "Function-argument errors": [
+      {
+        "message": "\\\\@char has non-numeric argument ",
+        "count": 1
+      },
+      {
+        "message": "Argument number \\\"",
+        "count": 1
+      },
+      {
+        "message": "\\\\char` missing argument",
+        "count": 1
+      },
+      {
+        "message": "Unexpected end of input in a macro argument",
+        "count": 1
+      },
+      {
+        "message": "Not a valid argument number",
+        "count": 1
+      },
+      {
+        "message": "Null argument, please report this as a bug",
+        "count": 1
+      },
+      {
+        "message": "A primitive argument cannot be optional",
+        "count": 1
+      }
+    ],
+    "Newline / tabular-row errors": [
+      {
+        "message": "\\\\@char with invalid code point ",
+        "count": 1
+      },
+      {
+        "message": "Mismatch: \\\\begin{",
+        "count": 1
+      },
+      {
+        "message": "\\\\htmlData key/value '",
+        "count": 1
+      },
+      {
+        "message": "\\\\newcommand{",
+        "count": 1
+      },
+      {
+        "message": "\\\\renewcommand{",
+        "count": 1
+      },
+      {
+        "message": "Multiple \\\\tag",
+        "count": 1
+      },
+      {
+        "message": "\\\\verb assertion failed --\\n                    please report what input caused this bug",
+        "count": 1
+      },
+      {
+        "message": "\\\\tag works only in display equations",
+        "count": 1
+      }
+    ],
+    "Delimiter mismatch (\\left / \\right)": [
+      {
+        "message": "Illegal delimiter: '",
+        "count": 1
+      },
+      {
+        "message": "\\\\current@color set to non-string in \\\\right",
+        "count": 1
+      },
+      {
+        "message": "\\\\middle without preceding \\\\left",
+        "count": 1
+      },
+      {
+        "message": "\\\\verb ended by end of line instead of matching delimiter",
+        "count": 1
+      },
+      {
+        "message": "The length of delimiters doesn't match the number of args!",
+        "count": 1
+      }
+    ],
+    "Environment errors (\\begin / \\end)": [
+      {
+        "message": "No such environment: ",
+        "count": 1
+      }
+    ],
+    "Constraint violation": [
+      {
+        "message": "\\\\newcommand's first argument must be a macro name",
+        "count": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+cd renderer
+
+# Unit tests
+python -m unittest tests_solid.test_correct_latex tests_solid.test_broken_latex tests_solid.test_solid_principles tests_solid.test_error_analyzer
+python -m unittest tests.test_pipeline
+
+# E2E scripts
+python _e2e_autoheal.py
+node _e2e_js.js
+node _e2e_user_input.js
+python _e2e_idempotence.py
+python _validate_synth.py
+
+# Dataset runs
+python -m app.run_pipeline --input ..\golden_test_set.csv    --outdir out_solid\golden_test_set
+python -m app.run_pipeline --input ..\confirmed_broken.csv   --outdir out_solid\confirmed_broken
+python -m app.run_pipeline --input ..\confirmed_good.csv     --outdir out_solid\confirmed_good
+python -m app.run_pipeline --input ..\tricky_examples.csv    --outdir out_solid\tricky_examples
+python -m app.run_pipeline --input ..\labeled_sample.csv     --outdir out_solid\labeled_sample
+python -m app.run_pipeline --input ..\classified_candidates.jsonl --outdir out_solid\full
+python -m app.run_pipeline --input ..\all_candidates.jsonl   --outdir out_solid\all_candidates
+
+# Autoheal demos
+python -m app.autoheal --diagnose "\alpha + eta = -\frac{1}{6}`$"
+python _demo_diagnostic.py
+python _proof_autoheal.py
+python _demo_autoheal.py
+
+# Fallback inspection
+python _inspect_fallbacks.py
+
+# Inspector regen + serve
+python -m app.build_inspector --input ..\classified_candidates.jsonl --per-stratum 40 --max-rows 1500
+python -m http.server 8765
+
+
+
+terminal 2
+start http://127.0.0.1:8765/web/inspector/index.html
